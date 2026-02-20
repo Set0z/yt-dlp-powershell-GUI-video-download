@@ -1,6 +1,6 @@
 
 #region Глобальные переменные
-$version = 1.1
+$version = 1.2
 $pwshPath = "$env:SystemRoot\System32\WindowsPowerShell\v1.0\powershell.exe"
 $script:debug = $false
 $script:multiple_audio = $false
@@ -14,7 +14,107 @@ Add-Type -AssemblyName System.Windows.Forms
 Add-Type -AssemblyName System.Drawing
 #endregion
 
-#region Создание Proxy Form
+#region Создание форм Cookie
+
+# Создаем форму Cookie
+$form_cookie = New-Object System.Windows.Forms.Form
+$form_cookie.Text = "Cookie Settings"
+$form_cookie.Size = New-Object System.Drawing.Size(225,150)
+$form_cookie.StartPosition = "CenterScreen"
+$form_cookie.FormBorderStyle = 'FixedSingle' #
+$form_cookie.MaximizeBox = $false
+$form_cookie.MinimizeBox = $false
+$form_cookie.BackColor = [System.Drawing.Color]::FromArgb(1,46,110)
+$form_cookie.ForeColor = [System.Drawing.Color]::White
+$form_cookie.Icon = [System.Drawing.Icon]::ExtractAssociatedIcon($pwshPath)
+
+#Создаём RadioButton Browser
+$radio_cookies_browser = New-Object System.Windows.Forms.RadioButton
+$radio_cookies_browser.Location = New-Object System.Drawing.Point(11,15)
+$radio_cookies_browser.Size = New-Object System.Drawing.Size(95,15)
+$radio_cookies_browser.Text = "From browser:"
+$radio_cookies_browser.Checked = $true
+$radio_cookies_browser.Enabled = $false
+
+#Создаём RadioButton File
+$radio_cookies_file = New-Object System.Windows.Forms.RadioButton
+$radio_cookies_file.Location = New-Object System.Drawing.Point(11,50)
+$radio_cookies_file.Size = New-Object System.Drawing.Size(105,15)
+$radio_cookies_file.Text = "From cookie file:"
+$radio_cookies_file.Enabled = $false
+
+#Добавляем RadioButtons
+$form_cookie.Controls.AddRange(@(
+    $radio_cookies_browser,
+    $radio_cookies_file
+))
+
+# Создаём список Браузеров
+$comboBox_browser = New-Object System.Windows.Forms.ComboBox
+$comboBox_browser.Location = New-Object System.Drawing.Point(110,15)
+$comboBox_browser.Size = New-Object System.Drawing.Size(90,20)
+$comboBox_browser.DropDownStyle = 'DropDownList'
+$comboBox_browser.Items.Add("Brave") *>$null
+$comboBox_browser.Items.Add("Chrome") *>$null
+$comboBox_browser.Items.Add("Chromium") *>$null
+$comboBox_browser.Items.Add("Edge") *>$null
+$comboBox_browser.Items.Add("Firefox") *>$null
+$comboBox_browser.Items.Add("Opera") *>$null
+$comboBox_browser.Items.Add("Safari") *>$null
+$comboBox_browser.Items.Add("Vivaldi") *>$null
+$comboBox_browser.Items.Add("Whale") *>$null
+$comboBox_browser.SelectedItem = "Chrome"
+$comboBox_browser.Enabled = $false
+$form_cookie.Controls.Add($comboBox_browser)
+
+# Создаем кнопку Browse
+$button_cookie_Browse = New-Object System.Windows.Forms.Button
+$button_cookie_Browse.Location = New-Object System.Drawing.Point(120,49)
+$button_cookie_Browse.Size = New-Object System.Drawing.Size(80,20)
+$button_cookie_Browse.Text = "Browse..."
+$button_cookie_Browse.TextAlign = "MiddleCenter"
+$button_cookie_Browse.UseVisualStyleBackColor = $false
+$button_cookie_Browse.BackColor = [System.Drawing.Color]::White
+$button_cookie_Browse.ForeColor = [System.Drawing.Color]::Black
+$button_cookie_Browse.TabIndex = 3
+$button_cookie_Browse.Enabled = $false
+$form_cookie.Controls.Add($button_cookie_Browse)
+
+# Создаем кнопку OK
+$button_cookie_OK = New-Object System.Windows.Forms.Button
+$button_cookie_OK.Location = New-Object System.Drawing.Point(95,85)
+$button_cookie_OK.Size = New-Object System.Drawing.Size(40,20)
+$button_cookie_OK.Text = "OK"
+$button_cookie_OK.TextAlign = "MiddleCenter"
+$button_cookie_OK.UseVisualStyleBackColor = $false
+$button_cookie_OK.BackColor = [System.Drawing.Color]::White
+$button_cookie_OK.ForeColor = [System.Drawing.Color]::Black
+$button_cookie_OK.TabIndex = 3
+$form_cookie.Controls.Add($button_cookie_OK)
+
+# Создаем кнопку Cancel
+$button_cookie_cancel = New-Object System.Windows.Forms.Button
+$button_cookie_cancel.Location = New-Object System.Drawing.Point(140,85)
+$button_cookie_cancel.Size = New-Object System.Drawing.Size(60,20)
+$button_cookie_cancel.Text = "Cancel"
+$button_cookie_cancel.TextAlign = "MiddleCenter"
+$button_cookie_cancel.UseVisualStyleBackColor = $false
+$button_cookie_cancel.BackColor = [System.Drawing.Color]::White
+$button_cookie_cancel.ForeColor = [System.Drawing.Color]::Black
+$button_cookie_cancel.TabIndex = 4
+$form_cookie.Controls.Add($button_cookie_cancel)
+
+# Создаем CheckBox
+$checkBox_cookie = New-Object System.Windows.Forms.CheckBox
+$checkBox_cookie.Location = New-Object System.Drawing.Point(10,87)
+$checkBox_cookie.Text = "Use Cookie"
+$checkBox_cookie.AutoSize = $true
+$checkBox_cookie.TabIndex = 2
+$form_cookie.Controls.Add($checkBox_cookie)
+
+#endregion
+
+#region Создание форм Proxy
 
 # Создаем форму Proxy
 $form_proxy = New-Object System.Windows.Forms.Form
@@ -92,7 +192,7 @@ $form_proxy.Controls.Add($label_Port)
 
 #endregion
 
-#region Создание форм
+#region Создание основных форм
 
 # Создаем форму
 $form = New-Object System.Windows.Forms.Form
@@ -104,6 +204,22 @@ $form.MaximizeBox = $false
 $form.MinimizeBox = $false
 $form.BackColor = [System.Drawing.Color]::FromArgb(1,46,110)
 $form.ForeColor = [System.Drawing.Color]::White
+
+# Создаем кнопку Cookie
+$button_cookie = New-Object System.Windows.Forms.Button
+$button_cookie.Location = New-Object System.Drawing.Point(50,0)
+$button_cookie.Size = New-Object System.Drawing.Size(50,20)
+$button_cookie.Text = "Cookie"
+$button_cookie.TabIndex = 3
+$form.Controls.Add($button_cookie)
+
+# Создаем кнопку Update yt-dlp
+$button_update = New-Object System.Windows.Forms.Button
+$button_update.Location = New-Object System.Drawing.Point(100,0)
+$button_update.Size = New-Object System.Drawing.Size(90,20)
+$button_update.Text = "Update yt-dlp"
+$button_update.TabIndex = 3
+$form.Controls.Add($button_update)
 
 # Создаем текстовое поле
 $textBox = New-Object System.Windows.Forms.TextBox
@@ -336,10 +452,108 @@ function Format-FileSize {
 
 #region События
 
+#region Cookie
+
+#Событие нажатия на кнопку Cookie
+$button_cookie.Add_Click({
+    $form_cookie.ShowDialog()
+})
+
+
+
+
+
+#Событие открытия формы Cookie
+$form_cookie.Add_Shown({
+    $script:last_cookie_comboBox = $comboBox_browser.SelectedItem
+    $script:last_cookie_check = $checkBox_cookie.Checked
+    if($radio_cookies_browser.Checked){$script:last_radio_check = "browser"} elseif($radio_cookies_file.Checked){$script:last_radio_check = "file"}
+    $script:last_cookie_file = $script:cookie_file
+})
+
+#Событие закрытия формы Cookie
+$form_cookie.Add_FormClosed({
+    $comboBox_browser.SelectedItem = $script:last_cookie_comboBox
+    $checkBox_cookie.Checked = $script:last_cookie_check
+    if($script:last_radio_check -eq "browser"){$radio_cookies_browser.Checked = $true } elseif($script:last_radio_check -eq "file"){$radio_cookies_file.Checked = $true}
+    $script:cookie_file = $script:last_cookie_file
+})
+
+#Событие нажатия Cancel Cookie
+$button_cookie_cancel.Add_Click({
+    $comboBox_browser.SelectedItem = $script:last_cookie_comboBox
+    $checkBox_cookie.Checked = $script:last_cookie_check
+    if($script:last_radio_check -eq "browser"){$radio_cookies_browser.Checked = $true } elseif($script:last_radio_check -eq "file"){$radio_cookies_file.Checked = $true}
+    $script:cookie_file = $script:last_cookie_file
+    $form_cookie.Hide()
+})
+
+
+
+
+
+#Событие нажатия ОК Cookie
+$button_cookie_OK.Add_Click({
+    if($checkBox_cookie.Checked){
+        $script:use_cookie = $true
+        if($radio_cookies_browser.Checked){
+            $script:use_cookie_file = $false
+            $script:use_cookie_browser = $true
+            $script:cookie_browser = $comboBox_browser.SelectedItem
+        } elseif($radio_cookies_file.Checked){
+            $script:use_cookie_browser = $false
+            $script:use_cookie_file = $true
+            $script:cookie_file = $script:cookie_file
+        }
+    } else {$script:use_cookie_browser = $false ; $script:use_cookie_file = $false ; $script:use_cookie = $false}
+    #Write-Host "use_cookie=$($script:use_cookie), use_cookie_browser=$($script:use_cookie_browser), cookie_browser=$($script:cookie_browser), use_cookie_file=$($script:use_cookie_file), cookie_file=$($script:cookie_file)"
+    $form_cookie.Hide()
+})
+
+#Событие нажатия Browse
+$button_cookie_Browse.Add_Click({
+    $openFileDialog = New-Object System.Windows.Forms.OpenFileDialog
+    $openFileDialog.InitialDirectory = [Environment]::GetFolderPath("Desktop")
+    $openFileDialog.Filter = "All files (*.*)|*.*"
+    $openFileDialog.Title = "Select a cookie file"
+    if ($openFileDialog.ShowDialog() -eq [System.Windows.Forms.DialogResult]::OK) {
+        $script:cookie_file = $openFileDialog.FileName
+    }
+})
+
+
+#Событие галочки Use Cookies
+$checkBox_cookie.Add_CheckedChanged({
+    if ($checkBox_cookie.Checked) {
+        $radio_cookies_browser.Enabled = $true
+        $radio_cookies_file.Enabled = $true
+        if($radio_cookies_browser.Checked){$comboBox_browser.Enabled = $true}else{$button_cookie_Browse.Enabled = $true}
+    } else {
+        $radio_cookies_browser.Enabled = $false
+        $radio_cookies_file.Enabled = $false
+        $comboBox_browser.Enabled = $false
+        $button_cookie_Browse.Enabled = $false
+    }
+})
+
+# Событие выбора From browser
+$radio_cookies_browser.Add_CheckedChanged({
+    if ($radio_cookies_browser.Checked) {
+        $comboBox_browser.Enabled = $true
+        $button_cookie_Browse.Enabled = $false
+    }else{
+        $comboBox_browser.Enabled = $false
+        $button_cookie_Browse.Enabled = $true
+    }
+})
+
+#endregion
+
+#region Proxy
 
 #Событие нажатия на кнопку Proxy
 $button_proxy.Add_Click({
-    $form.Hide()
+    #$form.Hide()
     $form_proxy.ShowDialog()
 })
 
@@ -349,7 +563,7 @@ $button_OK.Add_Click({
         $script:use_proxy = $true
         $script:proxy_address = $($textBox_proxy_ip.Text) + ":" +$($textBox_proxy_port.Text)
     } else {$script:use_proxy = $false}
-    $form.Show()
+    #$form.Show()
     $form_proxy.Hide()
 })
 
@@ -358,26 +572,73 @@ $form_proxy.Add_Shown({
     $script:last_proxy_check = $checkBox_proxy.Checked
     $script:last_proxy_ip = $textBox_proxy_ip.Text
     $script:last_proxy_port = $textBox_proxy_port.Text
-
-    
 })
+
+
+
 
 #Событие закрытия формы Proxy
 $form_proxy.Add_FormClosed({
     $checkBox_proxy.Checked = $script:last_proxy_check
     $textBox_proxy_ip.Text = $script:last_proxy_ip
     $textBox_proxy_port.Text = $script:last_proxy_port
-    $form.Show()
+    #$form.Show()
 })
 
-#Событие нажатия на кнопку Cancel
+#Событие нажатия на кнопку Proxy Cancel
 $button_Cancel.Add_Click({
     $checkBox_proxy.Checked = $script:last_proxy_check
     $textBox_proxy_ip.Text = $script:last_proxy_ip
     $textBox_proxy_port.Text = $script:last_proxy_port
     $form_proxy.Hide()
-    $form.Show()
+    #$form.Show()
 })
+
+
+
+
+#endregion
+
+#region Update
+
+#Событие нажатия на кнопку Update yt-dlp
+$button_update.Add_Click({
+    $button_update.Text = "Updating..."
+    try{
+        $ytDlpUpdateResult =  & yt-dlp -U 2>&1
+        if ($LASTEXITCODE -ne 0) {
+            throw $ytDlpUpdateResult
+        }
+        if ($ytDlpUpdateResult -match 'yt-dlp is up to date') {
+            [System.Windows.Forms.MessageBox]::Show(
+                "yt-dlp is up to date!",
+                "ytvd",
+                [System.Windows.Forms.MessageBoxButtons]::OK,
+                [System.Windows.Forms.MessageBoxIcon]::Information
+            ) *>$null
+        }elseif($ytDlpUpdateResult -match 'Updated'){
+            [System.Windows.Forms.MessageBox]::Show(
+                "$(($ytDlpUpdateResult -split "`n") | Where-Object { $_ -match 'Updated' })",
+                "ytvd",
+                [System.Windows.Forms.MessageBoxButtons]::OK,
+                [System.Windows.Forms.MessageBoxIcon]::Information
+            ) *>$null
+        }
+    }catch{
+        [System.Windows.Forms.MessageBox]::Show(
+        "$_",
+        "ytvd Error",
+        [System.Windows.Forms.MessageBoxButtons]::OK,
+        [System.Windows.Forms.MessageBoxIcon]::Error
+        ) *>$null
+
+    }
+    $button_update.Text = "Update yt-dlp"
+})
+
+#endregion
+
+#region Form
 
 #Событие нажатия на кнопку Paste
 $button_paste.Add_Click({
@@ -387,21 +648,25 @@ $button_paste.Add_Click({
 #Событие нажатия на кнопку Reset
 $button_reset.Add_Click({
     $textBox.Text = ""
-    $button.Visible = 1
-    $button1.Visible = 0
-    $button_reset.Visible = 0
-    $button_paste.Visible = 1
+    $button.Visible = $true
+    $button1.Visible = $false
+    $button_reset.Visible = $false
+    $button_paste.Visible = $true
+    $button_proxy.Visible = $true
     $button_debug.Visible = $false
     $form.Size = New-Object System.Drawing.Size(500,95)
     $textBox.Enabled = $true
     $comboLang.Visible = $false
     $label7.Visible = $false
-    $comboRes.Visible = 0
-    $comboTBR.Visible = 0
-    $label1.Visible = 0
-    $label2.Visible = 0
-    $label4.Visible = 0
-    $label5.Visible = 0
+    $comboRes.Visible = $false
+    $comboTBR.Visible = $false
+    $label1.Visible = $false
+    $label2.Visible = $false
+    $label4.Visible = $false
+    $label5.Visible = $false
+    $button_update.Visible = $true
+    $button_cookie.Visible = $true
+    $checkBox.Checked = $false
     $form.Text = "Video Download"
 })
 
@@ -421,36 +686,42 @@ $button.Add_Click({
         Remove-Item -Path "$env:TEMP\videos.json"
     }
 
+
+    ####################### не работают с cookies !!! ~~~~
     try {
-        if($script:yt_dlp_error -like $true){
-            if($script:use_proxy){
-                & "$script:yt_dlp_path" "--proxy" "$($script:proxy_address)" "--dump-single-json" "--no-warnings" $script:url >> "$env:TEMP\videos.json"
-            }else{
-                & "$script:yt_dlp_path" "--dump-single-json" "--no-warnings" $script:url >> "$env:TEMP\videos.json"
-            }
-        } else {
-            if($script:use_proxy){
-                & "yt-dlp.exe" "--proxy" "$($script:proxy_address)" "--dump-single-json" "--no-warnings" $script:url >> "$env:TEMP\videos.json"
-            }else{
-                & "yt-dlp.exe" "--dump-single-json" "--no-warnings" $script:url >> "$env:TEMP\videos.json"
+        $exePath = if ($script:yt_dlp_error -eq $true) { $script:yt_dlp_path } else { "yt-dlp.exe" }
+
+        $arguments = @("--dump-single-json", "--no-warnings")
+
+        if ($script:use_proxy) {
+            $arguments += "--proxy", "$($script:proxy_address)"
+        }
+
+        if ($script:use_cookie) {
+            if ($script:use_cookie_browser) {
+                $arguments += "--cookies-from-browser", "$script:cookie_browser"
+            } elseif ($script:use_cookie_file) {
+                $arguments += "--cookies", "$script:cookie_file"
             }
         }
-        
-        # Проверяем код возврата
+
+        $arguments += $script:url
+
+        & $exePath @arguments >> "$env:TEMP\videos.json" 2>$env:TEMP\yt_errors.txt 
+
         if ($LASTEXITCODE -ne 0) {
-            throw "yt-dlp exited with code $LASTEXITCODE"
+            $lastError = Get-Content "$env:TEMP\yt_errors.txt" -Raw
+            $clean = ($lastError -split "`r?`n")[0] -replace '(\.)\s+Use .*$', '$1'
+            throw $clean
         }
     }
     catch {
-        #Write-Host "Ошибка при выполнении yt-dlp: $($_.Exception.Message)" -ForegroundColor Red
-        #Write-Host "Детали ошибки: $($Error[0])" -ForegroundColor Yellow
-        
         $button.Text = "Search"
         [System.Windows.Forms.MessageBox]::Show(
-            "Invalid URL",
+            "$($_)",
             "Error",
             [System.Windows.Forms.MessageBoxButtons]::OK,
-            [System.Windows.Forms.MessageBoxIcon]::Warning
+            [System.Windows.Forms.MessageBoxIcon]::Error
         )
         Clear-Host
         $textBox.Text = ""
@@ -460,6 +731,9 @@ $button.Add_Click({
 
     $button_proxy.Visible = $false
     $button_debug.Visible = $true
+    $button_update.Visible = $false
+    $button_cookie.Visible = $false
+    
     $checkBox.Visible = $true
 
     $jsonContent = Get-Content -Path "$env:TEMP\videos.json" -Raw | ConvertFrom-Json
@@ -635,6 +909,7 @@ $button.Add_Click({
 
 
     $button.Text = "Search"
+    $button_proxy.Visible = $true
     $button.Visible = 0
     $button1.Visible = 1
     $label1.Visible = 1
@@ -677,19 +952,38 @@ $button1.Add_Click({
         Start-Sleep -Seconds 1
 
         $proc = New-Object System.Diagnostics.Process
-        if ($script:yt_dlp_error -like $true) {$proc.StartInfo.FileName = "$script:yt_dlp_path"} else {$proc.StartInfo.FileName = "yt-dlp.exe"}
-        if ($IsRemoteInvocation -eq $true) {
-            if ($script:yt_dlp_error -like $true) {$proc.StartInfo.Arguments = "--ffmpeg-location `"$script:ffmpeg_path`" -P `"$script:selectedPath`" --proxy $($script:proxy_address) -f $id $script:url"} else {$proc.StartInfo.Arguments = "-P `"$script:selectedPath`" --proxy $($script:proxy_address) -f $id $script:url"}
-        } else {
-            if ($script:yt_dlp_error -like $true) {$proc.StartInfo.Arguments = "--ffmpeg-location `"$script:ffmpeg_path`" --proxy $($script:proxy_address) -f $id $script:url"} else {$proc.StartInfo.Arguments = "--proxy $($script:proxy_address) -f $id $script:url"}
+        
+        $proc.StartInfo.FileName = if ($script:yt_dlp_error -eq $true){$script:yt_dlp_path} else {'yt-dlp.exe'}
+
+        $args = @()
+
+        if ($script:yt_dlp_error -eq $true) {
+            $args += '--ffmpeg-location'
+            $args += "`"$script:ffmpeg_path`""
         }
+
+        if ($IsRemoteInvocation -eq $true) {
+            $args += '-P'
+            $args += "`"$script:selectedPath`""
+        }
+
+        if($script:use_proxy){
+            $args += '--proxy'
+            $args += $script:proxy_address
+        }
+
+        $args += '-f'
+        $args += $id
+        $args += $script:url
+        $proc.StartInfo.Arguments = $args -join ' '
+
         $proc.StartInfo.UseShellExecute = $false
         $proc.StartInfo.RedirectStandardOutput = $true
         $proc.StartInfo.RedirectStandardError = $true
         $proc.StartInfo.CreateNoWindow = $true
-
+        Write-Host "$($proc.StartInfo.FileName) $($proc.StartInfo.Arguments)"
         $proc.Start() | Out-Null
-        Clear-Host
+        #Clear-Host
         # Чтение в реальном времени, без блокировки
         while (-not $proc.HasExited -or -not $proc.StandardOutput.EndOfStream) {
             if (-not $proc.StandardOutput.EndOfStream) {
@@ -715,7 +1009,7 @@ $button1.Add_Click({
         $proc.WaitForExit()
         Write-Host "Downloaded!"
         $button1.Text = "Download"
-        Clear-Host
+        #Clear-Host
         
         [System.Media.SystemSounds]::Exclamation.Play()
 
@@ -749,29 +1043,112 @@ $button1.Add_Click({
         
         $proc = New-Object System.Diagnostics.Process
         if ($script:yt_dlp_error -like $true) {$proc.StartInfo.FileName = "$script:yt_dlp_path"} else {$proc.StartInfo.FileName = "yt-dlp.exe"}
-        if($script:use_proxy){
-            if ($IsRemoteInvocation -eq $true) {
-                if (($script:yt_dlp_error -like $true) -and ($script:multiple_audio -like $false) -and (-not ($checkBox.Checked))) {$proc.StartInfo.Arguments = "--ffmpeg-location `"$script:ffmpeg_path`" -P `"$script:selectedPath`" --proxy $($script:proxy_address) -f $id+140 -o `"%(title)s.%(ext)s`" $script:url"} elseif (($script:multiple_audio -like $false) -and (-not ($checkBox.Checked))) {$proc.StartInfo.Arguments = "-P `"$script:selectedPath`" --proxy $($script:proxy_address) -f $id+140 -o `"%(title)s.%(ext)s`" $script:url"}
-                if (($script:yt_dlp_error -like $true) -and ($script:multiple_audio -like $true) -and (-not ($checkBox.Checked))) {$proc.StartInfo.Arguments = "--ffmpeg-location `"$script:ffmpeg_path`" -P `"$script:selectedPath`" --proxy $($script:proxy_address) -f $id+$audio_id -o `"%(title)s.%(ext)s`" $script:url"} elseif (($script:multiple_audio -like $true) -and (-not ($checkBox.Checked))) {$proc.StartInfo.Arguments = "-P `"$script:selectedPath`" --proxy $($script:proxy_address) -f $id+$audio_id -o `"%(title)s.%(ext)s`" $script:url"}
-                if (($script:yt_dlp_error -like $true) -and ($script:multiple_audio -like $false) -and ($checkBox.Checked)) {$proc.StartInfo.Arguments = "--ffmpeg-location `"$script:ffmpeg_path`" -P `"$script:selectedPath`" --proxy $($script:proxy_address) -f 140 -o `"%(title)s.%(ext)s`" $script:url"} elseif (($script:multiple_audio -like $false) -and ($checkBox.Checked)) {$proc.StartInfo.Arguments = "-P `"$script:selectedPath`" --proxy $($script:proxy_address) -f 140 -o `"%(title)s.%(ext)s`" $script:url"}
-                if (($script:yt_dlp_error -like $true) -and ($script:multiple_audio -like $true) -and ($checkBox.Checked)) {$proc.StartInfo.Arguments = "--ffmpeg-location `"$script:ffmpeg_path`" -P `"$script:selectedPath`" --proxy $($script:proxy_address) -f $audio_id -o `"%(title)s.%(ext)s`" $script:url"} elseif (($script:multiple_audio -like $true) -and ($checkBox.Checked)) {$proc.StartInfo.Arguments = "-P `"$script:selectedPath`" --proxy $($script:proxy_address) -f $audio_id -o `"%(title)s.%(ext)s`" $script:url"}
-            } else {
-                if (($script:yt_dlp_error -like $true) -and ($script:multiple_audio -like $false) -and (-not ($checkBox.Checked))) {$proc.StartInfo.Arguments = "--ffmpeg-location `"$script:ffmpeg_path`" --proxy $($script:proxy_address) -f $id+140 -o `"%(title)s.%(ext)s`" $script:url"} elseif (($script:multiple_audio -like $false) -and (-not ($checkBox.Checked))) {$proc.StartInfo.Arguments = "--proxy $($script:proxy_address) -f $id+140 -o `"%(title)s.%(ext)s`" $script:url"}
-                if (($script:yt_dlp_error -like $true) -and ($script:multiple_audio -like $true) -and (-not ($checkBox.Checked))) {$proc.StartInfo.Arguments = "--ffmpeg-location `"$script:ffmpeg_path`" --proxy $($script:proxy_address) -f $id+$audio_id -o `"%(title)s.%(ext)s`" $script:url"} elseif (($script:multiple_audio -like $true) -and (-not ($checkBox.Checked))) {$proc.StartInfo.Arguments = "--proxy $($script:proxy_address) -f $id+$audio_id -o `"%(title)s.%(ext)s`" $script:url"}
-                if (($script:yt_dlp_error -like $true) -and ($script:multiple_audio -like $false) -and ($checkBox.Checked)) {$proc.StartInfo.Arguments = "--ffmpeg-location `"$script:ffmpeg_path`" --proxy $($script:proxy_address) -f 140 -o `"%(title)s.%(ext)s`" $script:url"} elseif (($script:multiple_audio -like $false) -and ($checkBox.Checked)) {$proc.StartInfo.Arguments = "--proxy $($script:proxy_address) -f 140 -o `"%(title)s.%(ext)s`" $script:url"}
-                if (($script:yt_dlp_error -like $true) -and ($script:multiple_audio -like $true) -and ($checkBox.Checked)) {$proc.StartInfo.Arguments = "--ffmpeg-location `"$script:ffmpeg_path`" --proxy $($script:proxy_address) -f $audio_id -o `"%(title)s.%(ext)s`" $script:url"} elseif (($script:multiple_audio -like $true) -and ($checkBox.Checked)) {$proc.StartInfo.Arguments = "--proxy $($script:proxy_address) -f $audio_id -o `"%(title)s.%(ext)s`" $script:url"}
+        #Write-Host "use_cookie=$($script:use_cookie), use_cookie_browser=$($script:use_cookie_browser), cookie_browser=$($script:cookie_browser), use_cookie_file=$($script:use_cookie_file), cookie_file=$($script:cookie_file)"
+        if($script:use_cookie){
+            if($script:use_cookie_browser){
+                if($script:use_proxy){
+                    if ($IsRemoteInvocation -eq $true) {
+                        if (($script:yt_dlp_error -like $true) -and ($script:multiple_audio -like $false) -and (-not ($checkBox.Checked))) {$proc.StartInfo.Arguments = "--ffmpeg-location `"$script:ffmpeg_path`" -P `"$script:selectedPath`" --proxy $($script:proxy_address) --cookies-from-browser $($script:cookie_browser) -f $id+140 -o `"%(title)s.%(ext)s`" $script:url"} elseif (($script:multiple_audio -like $false) -and (-not ($checkBox.Checked))) {$proc.StartInfo.Arguments = "-P `"$script:selectedPath`" --proxy $($script:proxy_address) --cookies-from-browser $($script:cookie_browser) -f $id+140 -o `"%(title)s.%(ext)s`" $script:url"}
+                        if (($script:yt_dlp_error -like $true) -and ($script:multiple_audio -like $true) -and (-not ($checkBox.Checked))) {$proc.StartInfo.Arguments = "--ffmpeg-location `"$script:ffmpeg_path`" -P `"$script:selectedPath`" --proxy $($script:proxy_address) --cookies-from-browser $($script:cookie_browser) -f $id+$audio_id -o `"%(title)s.%(ext)s`" $script:url"} elseif (($script:multiple_audio -like $true) -and (-not ($checkBox.Checked))) {$proc.StartInfo.Arguments = "-P `"$script:selectedPath`" --proxy $($script:proxy_address) --cookies-from-browser $($script:cookie_browser) -f $id+$audio_id -o `"%(title)s.%(ext)s`" $script:url"}
+                        if (($script:yt_dlp_error -like $true) -and ($script:multiple_audio -like $false) -and ($checkBox.Checked)) {$proc.StartInfo.Arguments = "--ffmpeg-location `"$script:ffmpeg_path`" -P `"$script:selectedPath`" --proxy $($script:proxy_address) --cookies-from-browser $($script:cookie_browser) -f 140 -o `"%(title)s.%(ext)s`" $script:url"} elseif (($script:multiple_audio -like $false) -and ($checkBox.Checked)) {$proc.StartInfo.Arguments = "-P `"$script:selectedPath`" --proxy $($script:proxy_address) --cookies-from-browser $($script:cookie_browser) -f 140 -o `"%(title)s.%(ext)s`" $script:url"}
+                        if (($script:yt_dlp_error -like $true) -and ($script:multiple_audio -like $true) -and ($checkBox.Checked)) {$proc.StartInfo.Arguments = "--ffmpeg-location `"$script:ffmpeg_path`" -P `"$script:selectedPath`" --proxy $($script:proxy_address) --cookies-from-browser $($script:cookie_browser) -f $audio_id -o `"%(title)s.%(ext)s`" $script:url"} elseif (($script:multiple_audio -like $true) -and ($checkBox.Checked)) {$proc.StartInfo.Arguments = "-P `"$script:selectedPath`" --proxy $($script:proxy_address) --cookies-from-browser $($script:cookie_browser) -f $audio_id -o `"%(title)s.%(ext)s`" $script:url"}
+                    } else {
+                        if (($script:yt_dlp_error -like $true) -and ($script:multiple_audio -like $false) -and (-not ($checkBox.Checked))) {$proc.StartInfo.Arguments = "--ffmpeg-location `"$script:ffmpeg_path`" --proxy $($script:proxy_address) --cookies-from-browser $($script:cookie_browser) -f $id+140 -o `"%(title)s.%(ext)s`" $script:url"} elseif (($script:multiple_audio -like $false) -and (-not ($checkBox.Checked))) {$proc.StartInfo.Arguments = "--proxy $($script:proxy_address) --cookies-from-browser $($script:cookie_browser) -f $id+140 -o `"%(title)s.%(ext)s`" $script:url"}
+                        if (($script:yt_dlp_error -like $true) -and ($script:multiple_audio -like $true) -and (-not ($checkBox.Checked))) {$proc.StartInfo.Arguments = "--ffmpeg-location `"$script:ffmpeg_path`" --proxy $($script:proxy_address) --cookies-from-browser $($script:cookie_browser) -f $id+$audio_id -o `"%(title)s.%(ext)s`" $script:url"} elseif (($script:multiple_audio -like $true) -and (-not ($checkBox.Checked))) {$proc.StartInfo.Arguments = "--proxy $($script:proxy_address) --cookies-from-browser $($script:cookie_browser) -f $id+$audio_id -o `"%(title)s.%(ext)s`" $script:url"}
+                        if (($script:yt_dlp_error -like $true) -and ($script:multiple_audio -like $false) -and ($checkBox.Checked)) {$proc.StartInfo.Arguments = "--ffmpeg-location `"$script:ffmpeg_path`" --proxy $($script:proxy_address) --cookies-from-browser $($script:cookie_browser) -f 140 -o `"%(title)s.%(ext)s`" $script:url"} elseif (($script:multiple_audio -like $false) -and ($checkBox.Checked)) {$proc.StartInfo.Arguments = "--proxy $($script:proxy_address) --cookies-from-browser $($script:cookie_browser) -f 140 -o `"%(title)s.%(ext)s`" $script:url"}
+                        if (($script:yt_dlp_error -like $true) -and ($script:multiple_audio -like $true) -and ($checkBox.Checked)) {$proc.StartInfo.Arguments = "--ffmpeg-location `"$script:ffmpeg_path`" --proxy $($script:proxy_address) --cookies-from-browser $($script:cookie_browser) -f $audio_id -o `"%(title)s.%(ext)s`" $script:url"} elseif (($script:multiple_audio -like $true) -and ($checkBox.Checked)) {$proc.StartInfo.Arguments = "--proxy $($script:proxy_address) --cookies-from-browser $($script:cookie_browser) -f $audio_id -o `"%(title)s.%(ext)s`" $script:url"}
+                    }
+                }else{
+                    if ($IsRemoteInvocation -eq $true) {
+                        if (($script:yt_dlp_error -like $true) -and ($script:multiple_audio -like $false) -and (-not ($checkBox.Checked))) {$proc.StartInfo.Arguments = "--ffmpeg-location `"$script:ffmpeg_path`" -P `"$script:selectedPath`" --cookies-from-browser $($script:cookie_browser) -f $id+140 -o `"%(title)s.%(ext)s`" $script:url"} elseif (($script:multiple_audio -like $false) -and (-not ($checkBox.Checked))) {$proc.StartInfo.Arguments = "-P `"$script:selectedPath`" --cookies-from-browser $($script:cookie_browser) -f $id+140 -o `"%(title)s.%(ext)s`" $script:url"}
+                        if (($script:yt_dlp_error -like $true) -and ($script:multiple_audio -like $true) -and (-not ($checkBox.Checked))) {$proc.StartInfo.Arguments = "--ffmpeg-location `"$script:ffmpeg_path`" -P `"$script:selectedPath`" --cookies-from-browser $($script:cookie_browser) -f $id+$audio_id -o `"%(title)s.%(ext)s`" $script:url"} elseif (($script:multiple_audio -like $true) -and (-not ($checkBox.Checked))) {$proc.StartInfo.Arguments = "-P `"$script:selectedPath`" --cookies-from-browser $($script:cookie_browser) -f $id+$audio_id -o `"%(title)s.%(ext)s`" $script:url"}
+                        if (($script:yt_dlp_error -like $true) -and ($script:multiple_audio -like $false) -and ($checkBox.Checked)) {$proc.StartInfo.Arguments = "--ffmpeg-location `"$script:ffmpeg_path`" -P `"$script:selectedPath`" --cookies-from-browser $($script:cookie_browser) -f 140 -o `"%(title)s.%(ext)s`" $script:url"} elseif (($script:multiple_audio -like $false) -and ($checkBox.Checked)) {$proc.StartInfo.Arguments = "-P `"$script:selectedPath`" --cookies-from-browser $($script:cookie_browser) -f 140 -o `"%(title)s.%(ext)s`" $script:url"}
+                        if (($script:yt_dlp_error -like $true) -and ($script:multiple_audio -like $true) -and ($checkBox.Checked)) {$proc.StartInfo.Arguments = "--ffmpeg-location `"$script:ffmpeg_path`" -P `"$script:selectedPath`" --cookies-from-browser $($script:cookie_browser) -f $audio_id -o `"%(title)s.%(ext)s`" $script:url"} elseif (($script:multiple_audio -like $true) -and ($checkBox.Checked)) {$proc.StartInfo.Arguments = "-P `"$script:selectedPath`" --cookies-from-browser $($script:cookie_browser) -f $audio_id -o `"%(title)s.%(ext)s`" $script:url"}
+                    } else {
+                        if (($script:yt_dlp_error -like $true) -and ($script:multiple_audio -like $false) -and (-not ($checkBox.Checked))) {$proc.StartInfo.Arguments = "--ffmpeg-location `"$script:ffmpeg_path`" --cookies-from-browser $($script:cookie_browser) -f $id+140 -o `"%(title)s.%(ext)s`" $script:url"} elseif (($script:multiple_audio -like $false) -and (-not ($checkBox.Checked))) {$proc.StartInfo.Arguments = "--cookies-from-browser $($script:cookie_browser) -f $id+140 -o `"%(title)s.%(ext)s`" $script:url"}
+                        if (($script:yt_dlp_error -like $true) -and ($script:multiple_audio -like $true) -and (-not ($checkBox.Checked))) {$proc.StartInfo.Arguments = "--ffmpeg-location `"$script:ffmpeg_path`" --cookies-from-browser $($script:cookie_browser) -f $id+$audio_id -o `"%(title)s.%(ext)s`" $script:url"} elseif (($script:multiple_audio -like $true) -and (-not ($checkBox.Checked))) {$proc.StartInfo.Arguments = "--cookies-from-browser $($script:cookie_browser) -f $id+$audio_id -o `"%(title)s.%(ext)s`" $script:url"}
+                        if (($script:yt_dlp_error -like $true) -and ($script:multiple_audio -like $false) -and ($checkBox.Checked)) {$proc.StartInfo.Arguments = "--ffmpeg-location `"$script:ffmpeg_path`" --cookies-from-browser $($script:cookie_browser) -f 140 -o `"%(title)s.%(ext)s`" $script:url"} elseif (($script:multiple_audio -like $false) -and ($checkBox.Checked)) {$proc.StartInfo.Arguments = "--cookies-from-browser $($script:cookie_browser) -f 140 -o `"%(title)s.%(ext)s`" $script:url"}
+                        if (($script:yt_dlp_error -like $true) -and ($script:multiple_audio -like $true) -and ($checkBox.Checked)) {$proc.StartInfo.Arguments = "--ffmpeg-location `"$script:ffmpeg_path`" --cookies-from-browser $($script:cookie_browser) -f $audio_id -o `"%(title)s.%(ext)s`" $script:url"} elseif (($script:multiple_audio -like $true) -and ($checkBox.Checked)) {$proc.StartInfo.Arguments = "--cookies-from-browser $($script:cookie_browser) -f $audio_id -o `"%(title)s.%(ext)s`" $script:url"}
+                    }
+                }
+
+
+
+
+
+
+
+            }elseif($script:use_cookie_file){
+                if($script:use_proxy){
+                    if ($IsRemoteInvocation -eq $true) {
+                        if (($script:yt_dlp_error -like $true) -and ($script:multiple_audio -like $false) -and (-not ($checkBox.Checked))) {$proc.StartInfo.Arguments = "--ffmpeg-location `"$script:ffmpeg_path`" -P `"$script:selectedPath`" --proxy $($script:proxy_address) --cookies `"$($script:cookie_file)`" -f $id+140 -o `"%(title)s.%(ext)s`" $script:url"} elseif (($script:multiple_audio -like $false) -and (-not ($checkBox.Checked))) {$proc.StartInfo.Arguments = "-P `"$script:selectedPath`" --proxy $($script:proxy_address) --cookies `"$($script:cookie_file)`" -f $id+140 -o `"%(title)s.%(ext)s`" $script:url"}
+                        if (($script:yt_dlp_error -like $true) -and ($script:multiple_audio -like $true) -and (-not ($checkBox.Checked))) {$proc.StartInfo.Arguments = "--ffmpeg-location `"$script:ffmpeg_path`" -P `"$script:selectedPath`" --proxy $($script:proxy_address) --cookies `"$($script:cookie_file)`" -f $id+$audio_id -o `"%(title)s.%(ext)s`" $script:url"} elseif (($script:multiple_audio -like $true) -and (-not ($checkBox.Checked))) {$proc.StartInfo.Arguments = "-P `"$script:selectedPath`" --proxy $($script:proxy_address) --cookies `"$($script:cookie_file)`" -f $id+$audio_id -o `"%(title)s.%(ext)s`" $script:url"}
+                        if (($script:yt_dlp_error -like $true) -and ($script:multiple_audio -like $false) -and ($checkBox.Checked)) {$proc.StartInfo.Arguments = "--ffmpeg-location `"$script:ffmpeg_path`" -P `"$script:selectedPath`" --proxy $($script:proxy_address) --cookies `"$($script:cookie_file)`" -f 140 -o `"%(title)s.%(ext)s`" $script:url"} elseif (($script:multiple_audio -like $false) -and ($checkBox.Checked)) {$proc.StartInfo.Arguments = "-P `"$script:selectedPath`" --proxy $($script:proxy_address) --cookies `"$($script:cookie_file)`" -f 140 -o `"%(title)s.%(ext)s`" $script:url"}
+                        if (($script:yt_dlp_error -like $true) -and ($script:multiple_audio -like $true) -and ($checkBox.Checked)) {$proc.StartInfo.Arguments = "--ffmpeg-location `"$script:ffmpeg_path`" -P `"$script:selectedPath`" --proxy $($script:proxy_address) --cookies `"$($script:cookie_file)`" -f $audio_id -o `"%(title)s.%(ext)s`" $script:url"} elseif (($script:multiple_audio -like $true) -and ($checkBox.Checked)) {$proc.StartInfo.Arguments = "-P `"$script:selectedPath`" --proxy $($script:proxy_address) --cookies `"$($script:cookie_file)`" -f $audio_id -o `"%(title)s.%(ext)s`" $script:url"}
+                    } else {
+                        if (($script:yt_dlp_error -like $true) -and ($script:multiple_audio -like $false) -and (-not ($checkBox.Checked))) {$proc.StartInfo.Arguments = "--ffmpeg-location `"$script:ffmpeg_path`" --proxy $($script:proxy_address) --cookies `"$($script:cookie_file)`" -f $id+140 -o `"%(title)s.%(ext)s`" $script:url"} elseif (($script:multiple_audio -like $false) -and (-not ($checkBox.Checked))) {$proc.StartInfo.Arguments = "--proxy $($script:proxy_address) --cookies `"$($script:cookie_file)`" -f $id+140 -o `"%(title)s.%(ext)s`" $script:url"}
+                        if (($script:yt_dlp_error -like $true) -and ($script:multiple_audio -like $true) -and (-not ($checkBox.Checked))) {$proc.StartInfo.Arguments = "--ffmpeg-location `"$script:ffmpeg_path`" --proxy $($script:proxy_address) --cookies `"$($script:cookie_file)`" -f $id+$audio_id -o `"%(title)s.%(ext)s`" $script:url"} elseif (($script:multiple_audio -like $true) -and (-not ($checkBox.Checked))) {$proc.StartInfo.Arguments = "--proxy $($script:proxy_address) --cookies `"$($script:cookie_file)`" -f $id+$audio_id -o `"%(title)s.%(ext)s`" $script:url"}
+                        if (($script:yt_dlp_error -like $true) -and ($script:multiple_audio -like $false) -and ($checkBox.Checked)) {$proc.StartInfo.Arguments = "--ffmpeg-location `"$script:ffmpeg_path`" --proxy $($script:proxy_address) --cookies `"$($script:cookie_file)`" -f 140 -o `"%(title)s.%(ext)s`" $script:url"} elseif (($script:multiple_audio -like $false) -and ($checkBox.Checked)) {$proc.StartInfo.Arguments = "--proxy $($script:proxy_address) --cookies `"$($script:cookie_file)`" -f 140 -o `"%(title)s.%(ext)s`" $script:url"}
+                        if (($script:yt_dlp_error -like $true) -and ($script:multiple_audio -like $true) -and ($checkBox.Checked)) {$proc.StartInfo.Arguments = "--ffmpeg-location `"$script:ffmpeg_path`" --proxy $($script:proxy_address) --cookies `"$($script:cookie_file)`" -f $audio_id -o `"%(title)s.%(ext)s`" $script:url"} elseif (($script:multiple_audio -like $true) -and ($checkBox.Checked)) {$proc.StartInfo.Arguments = "--proxy $($script:proxy_address) --cookies `"$($script:cookie_file)`" -f $audio_id -o `"%(title)s.%(ext)s`" $script:url"}
+                    }
+                }else{
+                    if ($IsRemoteInvocation -eq $true) {
+                        if (($script:yt_dlp_error -like $true) -and ($script:multiple_audio -like $false) -and (-not ($checkBox.Checked))) {$proc.StartInfo.Arguments = "--ffmpeg-location `"$script:ffmpeg_path`" -P `"$script:selectedPath`" --cookies `"$($script:cookie_file)`" -f $id+140 -o `"%(title)s.%(ext)s`" $script:url"} elseif (($script:multiple_audio -like $false) -and (-not ($checkBox.Checked))) {$proc.StartInfo.Arguments = "-P `"$script:selectedPath`" --cookies `"$($script:cookie_file)`" -f $id+140 -o `"%(title)s.%(ext)s`" $script:url"}
+                        if (($script:yt_dlp_error -like $true) -and ($script:multiple_audio -like $true) -and (-not ($checkBox.Checked))) {$proc.StartInfo.Arguments = "--ffmpeg-location `"$script:ffmpeg_path`" -P `"$script:selectedPath`" --cookies `"$($script:cookie_file)`" -f $id+$audio_id -o `"%(title)s.%(ext)s`" $script:url"} elseif (($script:multiple_audio -like $true) -and (-not ($checkBox.Checked))) {$proc.StartInfo.Arguments = "-P `"$script:selectedPath`" --cookies `"$($script:cookie_file)`" -f $id+$audio_id -o `"%(title)s.%(ext)s`" $script:url"}
+                        if (($script:yt_dlp_error -like $true) -and ($script:multiple_audio -like $false) -and ($checkBox.Checked)) {$proc.StartInfo.Arguments = "--ffmpeg-location `"$script:ffmpeg_path`" -P `"$script:selectedPath`" --cookies `"$($script:cookie_file)`" -f 140 -o `"%(title)s.%(ext)s`" $script:url"} elseif (($script:multiple_audio -like $false) -and ($checkBox.Checked)) {$proc.StartInfo.Arguments = "-P `"$script:selectedPath`" --cookies `"$($script:cookie_file)`" -f 140 -o `"%(title)s.%(ext)s`" $script:url"}
+                        if (($script:yt_dlp_error -like $true) -and ($script:multiple_audio -like $true) -and ($checkBox.Checked)) {$proc.StartInfo.Arguments = "--ffmpeg-location `"$script:ffmpeg_path`" -P `"$script:selectedPath`" --cookies `"$($script:cookie_file)`" -f $audio_id -o `"%(title)s.%(ext)s`" $script:url"} elseif (($script:multiple_audio -like $true) -and ($checkBox.Checked)) {$proc.StartInfo.Arguments = "-P `"$script:selectedPath`" --cookies `"$($script:cookie_file)`" -f $audio_id -o `"%(title)s.%(ext)s`" $script:url"}
+                    } else {
+                        if (($script:yt_dlp_error -like $true) -and ($script:multiple_audio -like $false) -and (-not ($checkBox.Checked))) {$proc.StartInfo.Arguments = "--ffmpeg-location `"$script:ffmpeg_path`" --cookies `"$($script:cookie_file)`" -f $id+140 -o `"%(title)s.%(ext)s`" $script:url"} elseif (($script:multiple_audio -like $false) -and (-not ($checkBox.Checked))) {$proc.StartInfo.Arguments = "--cookies `"$($script:cookie_file)`" -f $id+140 -o `"%(title)s.%(ext)s`" $script:url"}
+                        if (($script:yt_dlp_error -like $true) -and ($script:multiple_audio -like $true) -and (-not ($checkBox.Checked))) {$proc.StartInfo.Arguments = "--ffmpeg-location `"$script:ffmpeg_path`" --cookies `"$($script:cookie_file)`" -f $id+$audio_id -o `"%(title)s.%(ext)s`" $script:url"} elseif (($script:multiple_audio -like $true) -and (-not ($checkBox.Checked))) {$proc.StartInfo.Arguments = "--cookies `"$($script:cookie_file)`" -f $id+$audio_id -o `"%(title)s.%(ext)s`" $script:url"}
+                        if (($script:yt_dlp_error -like $true) -and ($script:multiple_audio -like $false) -and ($checkBox.Checked)) {$proc.StartInfo.Arguments = "--ffmpeg-location `"$script:ffmpeg_path`" --cookies `"$($script:cookie_file)`" -f 140 -o `"%(title)s.%(ext)s`" $script:url"} elseif (($script:multiple_audio -like $false) -and ($checkBox.Checked)) {$proc.StartInfo.Arguments = "--cookies `"$($script:cookie_file)`" -f 140 -o `"%(title)s.%(ext)s`" $script:url"}
+                        if (($script:yt_dlp_error -like $true) -and ($script:multiple_audio -like $true) -and ($checkBox.Checked)) {$proc.StartInfo.Arguments = "--ffmpeg-location `"$script:ffmpeg_path`" --cookies `"$($script:cookie_file)`" -f $audio_id -o `"%(title)s.%(ext)s`" $script:url"} elseif (($script:multiple_audio -like $true) -and ($checkBox.Checked)) {$proc.StartInfo.Arguments = "--cookies `"$($script:cookie_file)`" -f $audio_id -o `"%(title)s.%(ext)s`" $script:url"}
+                    }
+                }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
             }
         }else{
-            if ($IsRemoteInvocation -eq $true) {
-                if (($script:yt_dlp_error -like $true) -and ($script:multiple_audio -like $false) -and (-not ($checkBox.Checked))) {$proc.StartInfo.Arguments = "--ffmpeg-location `"$script:ffmpeg_path`" -P `"$script:selectedPath`" -f $id+140 -o `"%(title)s.%(ext)s`" $script:url"} elseif (($script:multiple_audio -like $false) -and (-not ($checkBox.Checked))) {$proc.StartInfo.Arguments = "-P `"$script:selectedPath`" -f $id+140 -o `"%(title)s.%(ext)s`" $script:url"}
-                if (($script:yt_dlp_error -like $true) -and ($script:multiple_audio -like $true) -and (-not ($checkBox.Checked))) {$proc.StartInfo.Arguments = "--ffmpeg-location `"$script:ffmpeg_path`" -P `"$script:selectedPath`" -f $id+$audio_id -o `"%(title)s.%(ext)s`" $script:url"} elseif (($script:multiple_audio -like $true) -and (-not ($checkBox.Checked))) {$proc.StartInfo.Arguments = "-P `"$script:selectedPath`" -f $id+$audio_id -o `"%(title)s.%(ext)s`" $script:url"}
-                if (($script:yt_dlp_error -like $true) -and ($script:multiple_audio -like $false) -and ($checkBox.Checked)) {$proc.StartInfo.Arguments = "--ffmpeg-location `"$script:ffmpeg_path`" -P `"$script:selectedPath`" -f 140 -o `"%(title)s.%(ext)s`" $script:url"} elseif (($script:multiple_audio -like $false) -and ($checkBox.Checked)) {$proc.StartInfo.Arguments = "-P `"$script:selectedPath`" -f 140 -o `"%(title)s.%(ext)s`" $script:url"}
-                if (($script:yt_dlp_error -like $true) -and ($script:multiple_audio -like $true) -and ($checkBox.Checked)) {$proc.StartInfo.Arguments = "--ffmpeg-location `"$script:ffmpeg_path`" -P `"$script:selectedPath`" -f $audio_id -o `"%(title)s.%(ext)s`" $script:url"} elseif (($script:multiple_audio -like $true) -and ($checkBox.Checked)) {$proc.StartInfo.Arguments = "-P `"$script:selectedPath`" -f $audio_id -o `"%(title)s.%(ext)s`" $script:url"}
-            } else {
-                if (($script:yt_dlp_error -like $true) -and ($script:multiple_audio -like $false) -and (-not ($checkBox.Checked))) {$proc.StartInfo.Arguments = "--ffmpeg-location `"$script:ffmpeg_path`" -f $id+140 -o `"%(title)s.%(ext)s`" $script:url"} elseif (($script:multiple_audio -like $false) -and (-not ($checkBox.Checked))) {$proc.StartInfo.Arguments = "-f $id+140 -o `"%(title)s.%(ext)s`" $script:url"}
-                if (($script:yt_dlp_error -like $true) -and ($script:multiple_audio -like $true) -and (-not ($checkBox.Checked))) {$proc.StartInfo.Arguments = "--ffmpeg-location `"$script:ffmpeg_path`" -f $id+$audio_id -o `"%(title)s.%(ext)s`" $script:url"} elseif (($script:multiple_audio -like $true) -and (-not ($checkBox.Checked))) {$proc.StartInfo.Arguments = "-f $id+$audio_id -o `"%(title)s.%(ext)s`" $script:url"}
-                if (($script:yt_dlp_error -like $true) -and ($script:multiple_audio -like $false) -and ($checkBox.Checked)) {$proc.StartInfo.Arguments = "--ffmpeg-location `"$script:ffmpeg_path`" -f 140 -o `"%(title)s.%(ext)s`" $script:url"} elseif (($script:multiple_audio -like $false) -and ($checkBox.Checked)) {$proc.StartInfo.Arguments = "-f 140 -o `"%(title)s.%(ext)s`" $script:url"}
-                if (($script:yt_dlp_error -like $true) -and ($script:multiple_audio -like $true) -and ($checkBox.Checked)) {$proc.StartInfo.Arguments = "--ffmpeg-location `"$script:ffmpeg_path`" -f $audio_id -o `"%(title)s.%(ext)s`" $script:url"} elseif (($script:multiple_audio -like $true) -and ($checkBox.Checked)) {$proc.StartInfo.Arguments = "-f $audio_id -o `"%(title)s.%(ext)s`" $script:url"}
+            if($script:use_proxy){
+                if ($IsRemoteInvocation -eq $true) {
+                    if (($script:yt_dlp_error -like $true) -and ($script:multiple_audio -like $false) -and (-not ($checkBox.Checked))) {$proc.StartInfo.Arguments = "--ffmpeg-location `"$script:ffmpeg_path`" -P `"$script:selectedPath`" --proxy $($script:proxy_address) -f $id+140 -o `"%(title)s.%(ext)s`" $script:url"} elseif (($script:multiple_audio -like $false) -and (-not ($checkBox.Checked))) {$proc.StartInfo.Arguments = "-P `"$script:selectedPath`" --proxy $($script:proxy_address) -f $id+140 -o `"%(title)s.%(ext)s`" $script:url"}
+                    if (($script:yt_dlp_error -like $true) -and ($script:multiple_audio -like $true) -and (-not ($checkBox.Checked))) {$proc.StartInfo.Arguments = "--ffmpeg-location `"$script:ffmpeg_path`" -P `"$script:selectedPath`" --proxy $($script:proxy_address) -f $id+$audio_id -o `"%(title)s.%(ext)s`" $script:url"} elseif (($script:multiple_audio -like $true) -and (-not ($checkBox.Checked))) {$proc.StartInfo.Arguments = "-P `"$script:selectedPath`" --proxy $($script:proxy_address) -f $id+$audio_id -o `"%(title)s.%(ext)s`" $script:url"}
+                    if (($script:yt_dlp_error -like $true) -and ($script:multiple_audio -like $false) -and ($checkBox.Checked)) {$proc.StartInfo.Arguments = "--ffmpeg-location `"$script:ffmpeg_path`" -P `"$script:selectedPath`" --proxy $($script:proxy_address) -f 140 -o `"%(title)s.%(ext)s`" $script:url"} elseif (($script:multiple_audio -like $false) -and ($checkBox.Checked)) {$proc.StartInfo.Arguments = "-P `"$script:selectedPath`" --proxy $($script:proxy_address) -f 140 -o `"%(title)s.%(ext)s`" $script:url"}
+                    if (($script:yt_dlp_error -like $true) -and ($script:multiple_audio -like $true) -and ($checkBox.Checked)) {$proc.StartInfo.Arguments = "--ffmpeg-location `"$script:ffmpeg_path`" -P `"$script:selectedPath`" --proxy $($script:proxy_address) -f $audio_id -o `"%(title)s.%(ext)s`" $script:url"} elseif (($script:multiple_audio -like $true) -and ($checkBox.Checked)) {$proc.StartInfo.Arguments = "-P `"$script:selectedPath`" --proxy $($script:proxy_address) -f $audio_id -o `"%(title)s.%(ext)s`" $script:url"}
+                } else {
+                    if (($script:yt_dlp_error -like $true) -and ($script:multiple_audio -like $false) -and (-not ($checkBox.Checked))) {$proc.StartInfo.Arguments = "--ffmpeg-location `"$script:ffmpeg_path`" --proxy $($script:proxy_address) -f $id+140 -o `"%(title)s.%(ext)s`" $script:url"} elseif (($script:multiple_audio -like $false) -and (-not ($checkBox.Checked))) {$proc.StartInfo.Arguments = "--proxy $($script:proxy_address) -f $id+140 -o `"%(title)s.%(ext)s`" $script:url"}
+                    if (($script:yt_dlp_error -like $true) -and ($script:multiple_audio -like $true) -and (-not ($checkBox.Checked))) {$proc.StartInfo.Arguments = "--ffmpeg-location `"$script:ffmpeg_path`" --proxy $($script:proxy_address) -f $id+$audio_id -o `"%(title)s.%(ext)s`" $script:url"} elseif (($script:multiple_audio -like $true) -and (-not ($checkBox.Checked))) {$proc.StartInfo.Arguments = "--proxy $($script:proxy_address) -f $id+$audio_id -o `"%(title)s.%(ext)s`" $script:url"}
+                    if (($script:yt_dlp_error -like $true) -and ($script:multiple_audio -like $false) -and ($checkBox.Checked)) {$proc.StartInfo.Arguments = "--ffmpeg-location `"$script:ffmpeg_path`" --proxy $($script:proxy_address) -f 140 -o `"%(title)s.%(ext)s`" $script:url"} elseif (($script:multiple_audio -like $false) -and ($checkBox.Checked)) {$proc.StartInfo.Arguments = "--proxy $($script:proxy_address) -f 140 -o `"%(title)s.%(ext)s`" $script:url"}
+                    if (($script:yt_dlp_error -like $true) -and ($script:multiple_audio -like $true) -and ($checkBox.Checked)) {$proc.StartInfo.Arguments = "--ffmpeg-location `"$script:ffmpeg_path`" --proxy $($script:proxy_address) -f $audio_id -o `"%(title)s.%(ext)s`" $script:url"} elseif (($script:multiple_audio -like $true) -and ($checkBox.Checked)) {$proc.StartInfo.Arguments = "--proxy $($script:proxy_address) -f $audio_id -o `"%(title)s.%(ext)s`" $script:url"}
+                }
+            }else{
+                if ($IsRemoteInvocation -eq $true) {
+                    if (($script:yt_dlp_error -like $true) -and ($script:multiple_audio -like $false) -and (-not ($checkBox.Checked))) {$proc.StartInfo.Arguments = "--ffmpeg-location `"$script:ffmpeg_path`" -P `"$script:selectedPath`" -f $id+140 -o `"%(title)s.%(ext)s`" $script:url"} elseif (($script:multiple_audio -like $false) -and (-not ($checkBox.Checked))) {$proc.StartInfo.Arguments = "-P `"$script:selectedPath`" -f $id+140 -o `"%(title)s.%(ext)s`" $script:url"}
+                    if (($script:yt_dlp_error -like $true) -and ($script:multiple_audio -like $true) -and (-not ($checkBox.Checked))) {$proc.StartInfo.Arguments = "--ffmpeg-location `"$script:ffmpeg_path`" -P `"$script:selectedPath`" -f $id+$audio_id -o `"%(title)s.%(ext)s`" $script:url"} elseif (($script:multiple_audio -like $true) -and (-not ($checkBox.Checked))) {$proc.StartInfo.Arguments = "-P `"$script:selectedPath`" -f $id+$audio_id -o `"%(title)s.%(ext)s`" $script:url"}
+                    if (($script:yt_dlp_error -like $true) -and ($script:multiple_audio -like $false) -and ($checkBox.Checked)) {$proc.StartInfo.Arguments = "--ffmpeg-location `"$script:ffmpeg_path`" -P `"$script:selectedPath`" -f 140 -o `"%(title)s.%(ext)s`" $script:url"} elseif (($script:multiple_audio -like $false) -and ($checkBox.Checked)) {$proc.StartInfo.Arguments = "-P `"$script:selectedPath`" -f 140 -o `"%(title)s.%(ext)s`" $script:url"}
+                    if (($script:yt_dlp_error -like $true) -and ($script:multiple_audio -like $true) -and ($checkBox.Checked)) {$proc.StartInfo.Arguments = "--ffmpeg-location `"$script:ffmpeg_path`" -P `"$script:selectedPath`" -f $audio_id -o `"%(title)s.%(ext)s`" $script:url"} elseif (($script:multiple_audio -like $true) -and ($checkBox.Checked)) {$proc.StartInfo.Arguments = "-P `"$script:selectedPath`" -f $audio_id -o `"%(title)s.%(ext)s`" $script:url"}
+                } else {
+                    if (($script:yt_dlp_error -like $true) -and ($script:multiple_audio -like $false) -and (-not ($checkBox.Checked))) {$proc.StartInfo.Arguments = "--ffmpeg-location `"$script:ffmpeg_path`" -f $id+140 -o `"%(title)s.%(ext)s`" $script:url"} elseif (($script:multiple_audio -like $false) -and (-not ($checkBox.Checked))) {$proc.StartInfo.Arguments = "-f $id+140 -o `"%(title)s.%(ext)s`" $script:url"}
+                    if (($script:yt_dlp_error -like $true) -and ($script:multiple_audio -like $true) -and (-not ($checkBox.Checked))) {$proc.StartInfo.Arguments = "--ffmpeg-location `"$script:ffmpeg_path`" -f $id+$audio_id -o `"%(title)s.%(ext)s`" $script:url"} elseif (($script:multiple_audio -like $true) -and (-not ($checkBox.Checked))) {$proc.StartInfo.Arguments = "-f $id+$audio_id -o `"%(title)s.%(ext)s`" $script:url"}
+                    if (($script:yt_dlp_error -like $true) -and ($script:multiple_audio -like $false) -and ($checkBox.Checked)) {$proc.StartInfo.Arguments = "--ffmpeg-location `"$script:ffmpeg_path`" -f 140 -o `"%(title)s.%(ext)s`" $script:url"} elseif (($script:multiple_audio -like $false) -and ($checkBox.Checked)) {$proc.StartInfo.Arguments = "-f 140 -o `"%(title)s.%(ext)s`" $script:url"}
+                    if (($script:yt_dlp_error -like $true) -and ($script:multiple_audio -like $true) -and ($checkBox.Checked)) {$proc.StartInfo.Arguments = "--ffmpeg-location `"$script:ffmpeg_path`" -f $audio_id -o `"%(title)s.%(ext)s`" $script:url"} elseif (($script:multiple_audio -like $true) -and ($checkBox.Checked)) {$proc.StartInfo.Arguments = "-f $audio_id -o `"%(title)s.%(ext)s`" $script:url"}
+                }
             }
         }
         $proc.StartInfo.UseShellExecute = $false
@@ -827,6 +1204,8 @@ $button1.Add_Click({
         $textBox.Enabled = $true
         $button_paste.Visible = 1
         $button_reset.Visible = 0
+        $button_update.Visible = $true
+        $button_cookie.Visible = $true
         $form.Text = "Video download"
         $textBox.Text = ""
     
@@ -993,12 +1372,9 @@ $comboLang.Add_SelectedIndexChanged({
 })
 #endregion
 
+#endregion
 
-
-
-
-
-
+#region Проверка наличия yt-dlp и ffmpeg
 try {& "yt-dlp.exe" "--version" *>$null}catch{
     $script:yt_dlp_error = $true
     if($PSCulture -eq "ru-RU"){$result = [System.Windows.Forms.MessageBox]::Show("У вас есть установленный yt-dlp?","yt-dlp.exe не найден",[System.Windows.Forms.MessageBoxButtons]::YesNo,[System.Windows.Forms.MessageBoxIcon]::Question)}else{$result = [System.Windows.Forms.MessageBox]::Show("Do you have yt-dlp installed?","yt-dlp.exe not found",[System.Windows.Forms.MessageBoxButtons]::YesNo,[System.Windows.Forms.MessageBoxIcon]::Question)}
@@ -1073,6 +1449,6 @@ if (-not $script:ffmpeg_is_in_path){
         }
     }
 }
+#endregion
 
-# Отображаем форму
 [void]$form.ShowDialog()
