@@ -726,12 +726,13 @@ $form_runtimes.Add_FormClosed({
 })
 
 #Событие нажатия Cancel Runtimes
-$button_cookie_cancel.Add_Click({
+$button_runtime_cancel.Add_Click({
     $comboBox_runtime.SelectedItem = $script:last_runtime_comboBox
     $checkBox_runtime.Checked = $script:last_runtime_check
 
     $comboBox_components.SelectedItem = $script:last_components_comboBox
     $checkBox_components.Checked = $script:last_components_check
+    $form_runtimes.Hide()
 })
 
 #Событие нажатия ОК Runtimes
