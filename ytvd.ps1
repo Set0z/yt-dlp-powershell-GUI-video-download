@@ -1,7 +1,7 @@
-#Version: 1.3
+#Version: 1.4
 
 #region Глобальные переменные
-$version = 1.2
+$version = 1.4
 $pwshPath = "$env:SystemRoot\System32\WindowsPowerShell\v1.0\powershell.exe"
 $script:debug = $false
 $script:multiple_audio = $false
@@ -276,7 +276,7 @@ $form_runtimes.Controls.Add($button_runtime_cancel)
 
 #endregion
 
-#region Создание основных форм
+#region Создание Основной Формы
 
 # Создаем форму
 $form = New-Object System.Windows.Forms.Form
@@ -304,6 +304,14 @@ $button_update.Size = New-Object System.Drawing.Size(90,20)
 $button_update.Text = "Update yt-dlp"
 $button_update.TabIndex = 3
 $form.Controls.Add($button_update)
+
+# Создаем кнопку Help
+$button_Help = New-Object System.Windows.Forms.Button
+$button_Help.Location = New-Object System.Drawing.Point(0,40)
+$button_Help.Size = New-Object System.Drawing.Size(40,17)
+$button_Help.Text = "Help"
+$button_Help.Font = New-Object System.Drawing.Font("Arial", 7)
+$form.Controls.Add($button_Help)
 
 # Создаем кнопку Runtimes
 $button_runtimes = New-Object System.Windows.Forms.Button
@@ -373,7 +381,7 @@ $form.Controls.Add($button1)
 $comboRes = New-Object System.Windows.Forms.ComboBox
 $comboRes.Location = New-Object System.Drawing.Point(20,70)
 $comboRes.Size = New-Object System.Drawing.Size(120,25)
-$comboRes.DropDownStyle = 'DropDownList'  # чтобы нельзя было вводить текст
+$comboRes.DropDownStyle = 'DropDownList'  #
 $comboRes.Visible = 0 #
 $form.Controls.Add($comboRes)
 
@@ -448,6 +456,7 @@ $label7.Font = New-Object System.Drawing.Font("Arial",8,[System.Drawing.FontStyl
 $form.Controls.Add($label7)
 #endregion
 
+
 #region Функции
 #Проверка ссылки на TikTok
 function Test-TikTokUrl {
@@ -468,7 +477,7 @@ function Test-TikTokUrl {
             return $true
         }
     }
-    
+    $script:is_tiktok = $true
     return $false
 }
 
@@ -530,15 +539,78 @@ function Format-FileSize {
     if ($Size -eq 0) { return "0 B" }
     $units = @("B", "KB", "MB", "GB", "TB")
     $i = 0
-    $sizeDecimal = [decimal]$Size  # Преобразуем в decimal для точности
+    $sizeDecimal = [decimal]$Size
     
     while ($sizeDecimal -ge 1024 -and $i -lt $units.Length - 1) {
         $sizeDecimal = $sizeDecimal / 1024
         $i++
     }
     
-    # Округляем до двух знаков после запятой
     return "{0:N2} {1}" -f $sizeDecimal, $units[$i]
+}
+
+#Функция для подсчёта объема в плейлиста
+function Get-PlaylistSize {
+    param(
+        [object]$PlaylistJson,
+        [string]$SelectedResolution,
+        [bool]$AudioOnly
+    )
+
+    $totalSize = [double]0
+
+    foreach ($entry in $PlaylistJson.entries) {
+        $duration = [double]($entry.duration)
+
+        if ($AudioOnly) {
+            $bestFormat = $entry.formats | Where-Object {
+                $_.vcodec -eq "none" -and
+                $_.acodec -ne "none" -and
+                $_.acodec -ne $null
+            } | Sort-Object abr -Descending | Select-Object -First 1
+        } else {
+            $targetHeight = [int]($SelectedResolution -replace "p", "")
+            $bestFormat = $entry.formats | Where-Object {
+                $_.vcodec -ne "none" -and
+                $_.height -le $targetHeight -and
+                $_.height -ne $null
+            } | Sort-Object tbr -Descending | Select-Object -First 1
+        }
+
+        if ($bestFormat) {
+            if ($bestFormat.filesize_approx) {
+                $totalSize += [double]$bestFormat.filesize_approx
+            } elseif ($bestFormat.filesize) {
+                $totalSize += [double]$bestFormat.filesize
+            } elseif ($bestFormat.tbr -and $duration -gt 0) {
+                $totalSize += ($bestFormat.tbr * 1000 / 8) * $duration
+            }
+        }
+    }
+
+    return [int64]$totalSize
+}
+
+#Показ уведомления
+function Show-BalloonTip {
+    param(
+        [string]$Title = "B.U.R.A.N. Menu",
+        [string]$Message = "Сообщение"
+    )
+    
+    $cmd = @"
+Add-Type -AssemblyName System.Windows.Forms; 
+Add-Type -AssemblyName System.Drawing;
+`$n=New-Object System.Windows.Forms.NotifyIcon;
+`$n.Icon=[System.Drawing.Icon]::ExtractAssociatedIcon((Get-Process -Id `$PID).Path);
+`$n.Visible=`$true;
+`$n.ShowBalloonTip(10000,'$($Title.Replace("'","''"))','$($Message.Replace("'","''"))',[System.Windows.Forms.ToolTipIcon]::None);
+Start-Sleep -Seconds 10;
+`$n.Dispose()
+"@
+    
+    $encoded = [Convert]::ToBase64String([Text.Encoding]::Unicode.GetBytes($cmd))
+    Start-Process powershell.exe -ArgumentList "-NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -EncodedCommand $encoded" -WindowStyle Hidden
 }
 #endregion
 
@@ -645,7 +717,6 @@ $radio_cookies_browser.Add_CheckedChanged({
 
 #Событие нажатия на кнопку Proxy
 $button_proxy.Add_Click({
-    #$form.Hide()
     $form_proxy.ShowDialog()
 })
 
@@ -655,7 +726,6 @@ $button_OK.Add_Click({
         $script:use_proxy = $true
         $script:proxy_address = $($textBox_proxy_ip.Text) + ":" +$($textBox_proxy_port.Text)
     } else {$script:use_proxy = $false}
-    #$form.Show()
     $form_proxy.Hide()
 })
 
@@ -674,7 +744,6 @@ $form_proxy.Add_FormClosed({
     $checkBox_proxy.Checked = $script:last_proxy_check
     $textBox_proxy_ip.Text = $script:last_proxy_ip
     $textBox_proxy_port.Text = $script:last_proxy_port
-    #$form.Show()
 })
 
 #Событие нажатия на кнопку Proxy Cancel
@@ -683,7 +752,6 @@ $button_Cancel.Add_Click({
     $textBox_proxy_ip.Text = $script:last_proxy_ip
     $textBox_proxy_port.Text = $script:last_proxy_port
     $form_proxy.Hide()
-    #$form.Show()
 })
 
 
@@ -706,7 +774,6 @@ $checkBox_components.Add_CheckedChanged({
     if($comboBox_components.Enabled){$comboBox_components.Enabled = $false}else{$comboBox_components.Enabled = $true}
 })
 
-
 #Событие открытия формы Runtimes
 $form_runtimes.Add_Shown({
     $script:last_runtime_comboBox = $comboBox_runtime.SelectedItem
@@ -724,6 +791,55 @@ $form_runtimes.Add_FormClosed({
     $comboBox_components.SelectedItem = $script:last_components_comboBox
     $checkBox_components.Checked = $script:last_components_check
 })
+
+# Действие если выбран node и чекбокс включен
+$comboBox_runtime.Add_SelectedIndexChanged({
+    if ($checkBox_runtime.Checked -and $comboBox_runtime.SelectedItem -eq "node") {
+        try{node --version *>$null}catch{
+            $result = [System.Windows.Forms.MessageBox]::Show("Node.js is not installed. Do you want to install it?","Node.js",[System.Windows.Forms.MessageBoxButtons]::YesNo,[System.Windows.Forms.MessageBoxIcon]::Question)
+            if($result -eq [System.Windows.Forms.DialogResult]::Yes){
+                $raw_url = "https://nodejs.org/dist/latest/"
+                $page = Invoke-WebRequest -Uri $raw_url
+                $zip = ([regex]::Match($page.Content, 'node-v[\d.]+-win-x64\.zip')).Value
+                $url = $raw_url + $zip
+
+                $output = "$env:USERPROFILE\node.zip"
+                $nodeDir = "$env:USERPROFILE\node"
+                Invoke-WebRequest -Uri $url -OutFile $output
+                Expand-Archive -Path $output -DestinationPath $nodeDir -Force
+
+                $extracted = (Get-ChildItem $nodeDir -Directory)[0].FullName
+                [Environment]::SetEnvironmentVariable("PATH", $env:PATH + ";$extracted", "User")
+                $env:PATH += ";$extracted"
+            }
+        }
+    }
+})
+
+# Действие если выбран node и чекбокс включен
+$checkBox_runtime.Add_CheckedChanged({
+    if ($checkBox_runtime.Checked -and $comboBox_runtime.SelectedItem -eq "node") {
+        try{node --version *>$null}catch{
+            $result = [System.Windows.Forms.MessageBox]::Show("Node.js is not installed. Do you want to install it?","Node.js",[System.Windows.Forms.MessageBoxButtons]::YesNo,[System.Windows.Forms.MessageBoxIcon]::Question)
+            if($result -eq [System.Windows.Forms.DialogResult]::Yes){
+                $raw_url = "https://nodejs.org/dist/latest/"
+                $page = Invoke-WebRequest -Uri $raw_url
+                $zip = ([regex]::Match($page.Content, 'node-v[\d.]+-win-x64\.zip')).Value
+                $url = $raw_url + $zip
+
+                $output = "$env:USERPROFILE\node.zip"
+                $nodeDir = "$env:USERPROFILE\node"
+                Invoke-WebRequest -Uri $url -OutFile $output
+                Expand-Archive -Path $output -DestinationPath $nodeDir -Force
+
+                $extracted = (Get-ChildItem $nodeDir -Directory)[0].FullName
+                [Environment]::SetEnvironmentVariable("PATH", $env:PATH + ";$extracted", "User")
+                $env:PATH += ";$extracted"
+            }
+        }
+    }
+})
+
 
 #Событие нажатия Cancel Runtimes
 $button_runtime_cancel.Add_Click({
@@ -791,6 +907,31 @@ $button_update.Add_Click({
 
 #region Form
 
+
+#Событие нажатия на кнопку Help
+$button_Help.Add_Click({
+    [System.Windows.Forms.MessageBox]::Show(
+        "If you encounter an error searching Age-Restricted videos from YouTube, follow these steps:
+
+1. COOKIES SETUP:
+   - Open Settings and enable the 'Cookies' option
+   - Select the browser in which you are logged in to YouTube
+   - IMPORTANT: Some browsers require to be closed before cookies can be read
+   - Make sure you are logged in to YouTube in the selected browser
+
+2. NODE.JS SETUP:
+   - Node.js is required together with cookies to download Age-Restricted videos
+   - Download and install Node.js from: https://nodejs.org
+   - After installation, restart this application
+   - Go to Settings - JS Runtimes and enable Node.js
+
+Both Cookies and Node.js must be enabled to download Age-Restricted videos.",
+        "Help",
+        [System.Windows.Forms.MessageBoxButtons]::OK,
+        [System.Windows.Forms.MessageBoxIcon]::Information
+    )
+})
+
 #Событие нажатия на кнопку Paste
 $button_paste.Add_Click({
     $textBox.Text = [System.Windows.Forms.Clipboard]::GetText()
@@ -820,12 +961,14 @@ $button_reset.Add_Click({
     $button_cookie.Visible = $true
     $checkBox.Checked = $false
     $form.Text = "Video Download"
+    $script:jsonContent = $null
+    $script:is_playlist = $false
 })
 
 #Событие нажатия на кнопку Search
 $button.Add_Click({
     $script:url = $textBox.Text
-
+    if($script:url -eq ""){if($PSCulture -eq "ru-RU"){[System.Windows.Forms.MessageBox]::Show("Пустая ссылка","Ошибка",[System.Windows.Forms.MessageBoxButtons]::OK,[System.Windows.Forms.MessageBoxIcon]::Error) >$null}else{[System.Windows.Forms.MessageBox]::Show("Empty link","Error",[System.Windows.Forms.MessageBoxButtons]::OK,[System.Windows.Forms.MessageBoxIcon]::Error) >$null} ; return}
     if((-not (Test-TikTokUrl -Url $script:url)) -and (-not (Test-YouTube -Url $script:url))){if($PSCulture -eq "ru-RU"){[System.Windows.Forms.MessageBox]::Show("Неподдерживаемая ссылка","Ошибка",[System.Windows.Forms.MessageBoxButtons]::OK,[System.Windows.Forms.MessageBoxIcon]::Error) >$null}else{[System.Windows.Forms.MessageBox]::Show("Unsupported link","Error",[System.Windows.Forms.MessageBoxButtons]::OK,[System.Windows.Forms.MessageBoxIcon]::Error) >$null} ; return}
     if ($script:url -ne "") {
         $button.Text = "Searching..."
@@ -908,7 +1051,7 @@ $button.Add_Click({
     if (Test-TikTokUrl -Url $script:url){
         
         foreach ($format in $jsonContent.formats) {
-            # Видео форматы MP4
+
             if ($format.ext -eq "mp4" -and $format.vcodec -ne "none") {
                 $videoInfo = [PSCustomObject]@{
                     ID = $format.format_id
@@ -923,9 +1066,8 @@ $button.Add_Click({
                 }
                 $script:videos += $videoInfo
             }
-        } #обработка json
+        }
 
-        ##################################################################################################### Название канала | ролика | лайков
         $encoded_title = $jsonContent.title
         $encoded_chanel = $jsonContent.channel
         $likes = $jsonContent.like_count
@@ -938,7 +1080,6 @@ $button.Add_Click({
         
         if ($script:debug -eq $true){ $script:videos | Format-Table | Out-Host }
         $comboRes.Items.Clear()
-        #####################################################################################################
 
         $sortedResolutions = $script:videos | Select-Object -ExpandProperty Resolution | Sort-Object @{
             Expression = {
@@ -950,11 +1091,12 @@ $button.Add_Click({
                 }
             }
             Descending = $true
-        } -Unique #Сортировка Resolution
-        $comboRes.Items.AddRange($sortedResolutions) #Сортировка Resolution
+        } -Unique
+        $comboRes.Items.AddRange($sortedResolutions)
 
         $form.Size = New-Object System.Drawing.Size(500,140)
 
+        $checkBox.Visible = $false
         $button.Text = "Search"
         $button.Visible = 0
         $button1.Visible = 1
@@ -978,122 +1120,178 @@ $button.Add_Click({
         $button_reset.Visible = $true
 
     } elseif(Test-YouTube -Url $script:url) {
-        # Обрабатываем форматы
-        foreach ($format in $jsonContent.formats) {
-            # Видео форматы MP4
-            if ($format.ext -eq "mp4" -and $format.vcodec -ne "none" -and $format.format_note -and $format.format_note -ne "(original)" -and $format.format_note -ne "(default)") {
-                $videoInfo = [PSCustomObject]@{
-                    ID = $format.format_id
-                    Resolution = $format.resolution
-                    Size = if ($format.filesize_approx) { Format-FileSize $format.filesize_approx } else { "Unknown" }
-                    Raw_size = $format.filesize_approx
-                    TBR = if ($format.tbr) { "{0:N2} kbps" -f $format.tbr } else { "Unknown" }
-                    Quality = if ($format.quality) { $format.quality } else { "0,0" }
-                    FormatNote = $format.format_note
-                    Width = $format.width
-                    Height = $format.height
-                    FPS = $format.fps
+        
+        if($jsonContent._type -eq "playlist"){
+
+            $script:is_playlist = $true
+            $script:jsonContent = $jsonContent
+
+            $encoded_title = $jsonContent.title
+            $encoded_chanel = $jsonContent.channel
+            $views = $jsonContent.view_count
+            Add-Type -AssemblyName System.Web
+            $video_title = [System.Web.HttpUtility]::HtmlDecode($encoded_title)
+            $chanel_title = [System.Web.HttpUtility]::HtmlDecode($encoded_chanel)
+            $form.Text = "PLAYLIST | "+ $video_title + " | " + $views + " views"
+            Remove-Item -Path "$env:TEMP\videos.json"
+
+            $maxPlaylistHeight = 0
+
+            foreach ($entry in $jsonContent.entries) {
+                $videoFormats = $entry.formats | Where-Object {
+                    $_.vcodec -ne "none" -and $_.height -ne $null
                 }
-                $script:videos += $videoInfo
+
+                if ($videoFormats) {
+                    $maxHeight = ($videoFormats | Measure-Object -Property height -Maximum).Maximum
+
+                    if ($maxHeight -gt $maxPlaylistHeight) {
+                        $maxPlaylistHeight = $maxHeight
+                    }
+                }
             }
+
+            $maxPlaylistHeight = [int]$maxPlaylistHeight
+            $maxHeightStr = "$($maxPlaylistHeight)p"
+            $standardResolutions = @("144p", "240p", "360p", "480p", "720p", "1080p", "1440p", "2160p")
+            $resolutionsToAdd = $standardResolutions | Where-Object {[int]($_ -replace "p", "") -le $maxPlaylistHeight} | Sort-Object { [int]($_ -replace "p", "") } -Descending
+            $comboRes.Items.Clear()
+            $comboRes.Items.AddRange($resolutionsToAdd)
+            $comboRes.SelectedItem = $maxHeightStr
+
+            $checkBox.Visible = $true
+
+            $totalBytes = Get-PlaylistSize -PlaylistJson $jsonContent -SelectedResolution $comboRes.SelectedItem -AudioOnly $checkBox.Checked
+            $label5.Text = "$(Format-FileSize $totalBytes)"
+
+            $button.Text = "Search"
+            $button.Visible = $false
+            $button1.Visible = $true
+            $label1.Visible = $true
+            $label4.Visible = $true
+            $label4.Text = "Total Size:"
+            $label4.Location = New-Object System.Drawing.Point(395,50)
+            $label5.Visible = $true
+            $comboRes.Visible = $true
+            $textBox.Enabled = $false
+            $button_paste.Visible = $false
+            $button_reset.Visible = $true
+
+            $form.Size = New-Object System.Drawing.Size(500,140)
+
+        }else{
+            foreach ($format in $jsonContent.formats) {
+
+                if ($format.ext -eq "mp4" -and $format.vcodec -ne "none" -and $format.format_note -and $format.format_note -ne "(original)" -and $format.format_note -ne "(default)") {
+                    $videoInfo = [PSCustomObject]@{
+                        ID = $format.format_id
+                        Resolution = $format.resolution
+                        Size = if ($format.filesize_approx) { Format-FileSize $format.filesize_approx } else { "Unknown" }
+                        Raw_size = $format.filesize_approx
+                        TBR = if ($format.tbr) { "{0:N2} kbps" -f $format.tbr } else { "Unknown" }
+                        Quality = if ($format.quality) { $format.quality } else { "0,0" }
+                        FormatNote = $format.format_note
+                        Width = $format.width
+                        Height = $format.height
+                        FPS = $format.fps
+                    }
+                    $script:videos += $videoInfo
+                }
             
-            # Аудио форматы M4A
-            if ($format.ext -eq "m4a" -and $format.vcodec -eq "none" -and $format.acodec -like "mp4a*") {
-                $audioInfo = [PSCustomObject]@{
-                    ID = $format.format_id
-                    Size = if ($format.filesize_approx) { Format-FileSize $format.filesize_approx } else { "Unknown" }
-                    Raw_size = $format.filesize_approx
-                    TBR = if ($format.tbr) { "{0:N2} kbps" -f $format.tbr } else { "Unknown" }
-                    Language = if ($format.language) { $format.language } else { "Unknown" }
-                    FormatNote = $format.format_note.Split(",")[0].Trim()
-                    ASR = if ($format.asr) { "{0} Hz" -f $format.asr } else { "Unknown" }
-                    AudioChannels = if ($format.audio_channels) { $format.audio_channels } else { "Unknown" }
+                if ($format.ext -eq "m4a" -and $format.vcodec -eq "none" -and $format.acodec -like "mp4a*") {
+                    $audioInfo = [PSCustomObject]@{
+                        ID = $format.format_id
+                        Size = if ($format.filesize_approx) { Format-FileSize $format.filesize_approx } else { "Unknown" }
+                        Raw_size = $format.filesize_approx
+                        TBR = if ($format.tbr) { "{0:N2} kbps" -f $format.tbr } else { "Unknown" }
+                        Language = if ($format.language) { $format.language } else { "Unknown" }
+                        FormatNote = $format.format_note.Split(",")[0].Trim()
+                        ASR = if ($format.asr) { "{0} Hz" -f $format.asr } else { "Unknown" }
+                        AudioChannels = if ($format.audio_channels) { $format.audio_channels } else { "Unknown" }
+                    }
+                    $script:audios += $audioInfo
                 }
-                $script:audios += $audioInfo
             }
-        }
     
-        $encoded_title = $jsonContent.title
-        $encoded_chanel = $jsonContent.channel
-        $likes = $jsonContent.like_count
-        Add-Type -AssemblyName System.Web
-        $video_title = [System.Web.HttpUtility]::HtmlDecode($encoded_title)
-        $chanel_title = [System.Web.HttpUtility]::HtmlDecode($encoded_chanel)
-        $form.Text = $encoded_chanel + " | "+$video_title + " | " + $likes + " likes"
+            $encoded_title = $jsonContent.title
+            $encoded_chanel = $jsonContent.channel
+            $likes = $jsonContent.like_count
+            Add-Type -AssemblyName System.Web
+            $video_title = [System.Web.HttpUtility]::HtmlDecode($encoded_title)
+            $script:video_title_ballon = $video_title
+            $chanel_title = [System.Web.HttpUtility]::HtmlDecode($encoded_chanel)
+            $form.Text = $encoded_chanel + " | "+$video_title + " | " + $likes + " likes"
         
-        Remove-Item -Path "$env:TEMP\videos.json"
+            Remove-Item -Path "$env:TEMP\videos.json"
     
-        if ($script:debug -eq $true){
-        $script:audios | Format-Table | Out-Host
-        $script:videos | Format-Table | Out-Host
-        }
-    
-        $comboRes.Items.Clear()
-        $comboTBR.Items.Clear()
-        $comboLang.Items.Clear()
-        
-        $sortedResolutions = $script:videos | Select-Object -ExpandProperty FormatNote | Sort-Object @{
-            Expression = {
-                # Извлекаем числовое значение разрешения
-                if ($_ -match '(\d+)p') { [int]$matches[1] } else { 0 }
+            if ($script:debug -eq $true){
+            $script:audios | Format-Table | Out-Host
+            $script:videos | Format-Table | Out-Host
             }
-            Descending = $true
-        }, @{
-            Expression = {
-                # Сортируем по наличию HDR и 60fps
-                if ($_ -match 'HDR') { 2 } 
-                elseif ($_ -match '60') { 1 }
-                else { 0 }
-            }
-            Descending = $true
-        } -Unique
-        
-        $comboRes.Items.AddRange($sortedResolutions)
     
-        if ($script:audios | Where-Object { $_.id -eq "140-0" }) {
-            $script:multiple_audio = $true
-            $form.Size = New-Object System.Drawing.Size(500,185)
-            $comboLang.Visible = $true
-            $label7.Visible = $true
-            $comboLang.Items.AddRange(($script:audios | Select-Object -ExpandProperty FormatNote | Sort-Object -Unique -Descending))
-            $priority = "original"
-            foreach ($res in $priority) {
-                # Ищем строки, которые содержат слово "original" как отдельное слово
-                $match = $comboLang.Items | Where-Object { 
-                    $_ -match "\b$res\b" -or 
-                    $_ -like "*$res*" -and $_ -notmatch "[a-zA-Z]$res" -and $_ -notmatch "$res[a-zA-Z]"
+            $comboRes.Items.Clear()
+            $comboTBR.Items.Clear()
+            $comboLang.Items.Clear()
+        
+            $sortedResolutions = $script:videos | Select-Object -ExpandProperty FormatNote | Sort-Object @{
+                Expression = {
+                    if ($_ -match '(\d+)p') { [int]$matches[1] } else { 0 }
                 }
+                Descending = $true
+            }, @{
+                Expression = {
+                    if ($_ -match 'HDR') { 2 } 
+                    elseif ($_ -match '60') { 1 }
+                    else { 0 }
+                }
+                Descending = $true
+            } -Unique
+        
+            $comboRes.Items.AddRange($sortedResolutions)
+    
+            if ($script:audios | Where-Object { $_.id -eq "140-0" }) {
+                $script:multiple_audio = $true
+                $form.Size = New-Object System.Drawing.Size(500,185)
+                $comboLang.Visible = $true
+                $label7.Visible = $true
+                $comboLang.Items.AddRange(($script:audios | Select-Object -ExpandProperty FormatNote | Sort-Object -Unique -Descending))
+                $priority = "original"
+                foreach ($res in $priority) {
+                    $match = $comboLang.Items | Where-Object { 
+                        $_ -match "\b$res\b" -or 
+                        $_ -like "*$res*" -and $_ -notmatch "[a-zA-Z]$res" -and $_ -notmatch "$res[a-zA-Z]"
+                    }
                 
-                if ($match) {
-                    $comboLang.SelectedItem = $match
-                    break
+                    if ($match) {
+                        $comboLang.SelectedItem = $match
+                        break
+                    }
                 }
+        } else { $form.Size = New-Object System.Drawing.Size(500,140) }
+
+
+        $button.Text = "Search"
+        $button.Visible = 0
+        $button1.Visible = 1
+        $label1.Visible = 1
+        $label2.Visible = 1
+        $label4.Visible = 1
+        $label5.Visible = 1
+        $comboRes.Visible = 1
+        $comboTBR.Visible = 1
+        $priority = @("1080p60","1080p","720p60","720p","480p","360p","240p","144p")
+
+        foreach ($res in $priority) {
+            if ($comboRes.Items -contains $res) {
+               $comboRes.SelectedItem = $res
+                break
             }
-    } else { $form.Size = New-Object System.Drawing.Size(500,140) } #Несколько звуков
-
-
-    $button.Text = "Search"
-    $button.Visible = 0
-    $button1.Visible = 1
-    $label1.Visible = 1
-    $label2.Visible = 1
-    $label4.Visible = 1
-    $label5.Visible = 1
-    $comboRes.Visible = 1
-    $comboTBR.Visible = 1
-    $priority = @("1080p60","1080p","720p60","720p","480p","360p","240p","144p")
-
-    foreach ($res in $priority) {
-        if ($comboRes.Items -contains $res) {
-           $comboRes.SelectedItem = $res
-            break
         }
-    }
 
-    $textBox.Enabled = $false
-    $button_paste.Visible = $false
-    $button_reset.Visible = $true
-    }
+        $textBox.Enabled = $false
+        $button_paste.Visible = $false
+        $button_reset.Visible = $true
+        }}
 })
 
 #Событие нажатия на кнопку Download
@@ -1106,16 +1304,15 @@ $button1.Add_Click({
     $button1.Text = "Downloading..."
     $button1.Enabled = $false
 
-    if (Test-TikTokUrl -Url $script:url){
-        $selectedRes = $comboRes.SelectedItem
-        $id = $script:videos | Where-Object { $_.Resolution -ieq $selectedRes } |Select-Object -ExpandProperty ID | Sort-Object -Unique -Descending
+    if($script:is_playlist){
+        $selectedRes = $comboRes.SelectedItem -replace "p", ""
         $button1.Text = "Downloading..."
         $button_reset.Enabled = $false 
         $button_debug.Visible = $false
         Start-Sleep -Seconds 1
 
         $proc = New-Object System.Diagnostics.Process
-        
+
         $proc.StartInfo.FileName = if ($script:yt_dlp_error -eq $true){$script:yt_dlp_path} else {'yt-dlp.exe'}
 
         $args = @()
@@ -1130,13 +1327,28 @@ $button1.Add_Click({
             $args += "`"$script:selectedPath`""
         }
 
-        if($script:use_proxy){
-            $args += '--proxy'
-            $args += $script:proxy_address
+        if ($script:use_proxy) {$args += "--proxy", "$($script:proxy_address)"}
+
+        if ($script:use_runtimes) {$args += "--js-runtimes", "$script:selected_runtime"}
+
+        if ($script:use_components) {$args += "--remote-components", "$script:selected_components"}
+
+        if ($script:use_cookie) {
+            if ($script:use_cookie_browser) {
+                $args += "--cookies-from-browser", "$($script:cookie_browser)"
+            } elseif ($script:use_cookie_file) {
+                $args += "--cookies", "`"$($script:cookie_file)`""
+            }
         }
 
-        $args += '-f'
-        $args += $id
+        if ($checkBox.Checked) {
+            $args += "-f", "140"
+        }else{
+            $args += "-f", "bestvideo[height<=$($selectedRes)]+bestaudio/best[height<=$($selectedRes)]"
+        }
+
+        $args += "-o", "%(title)s.%(ext)s"
+        $args += "--merge-output-format ", "mp4"
         $args += $script:url
         $proc.StartInfo.Arguments = $args -join ' '
 
@@ -1144,138 +1356,20 @@ $button1.Add_Click({
         $proc.StartInfo.RedirectStandardOutput = $true
         $proc.StartInfo.RedirectStandardError = $true
         $proc.StartInfo.CreateNoWindow = $true
-        Write-Host "$($proc.StartInfo.FileName) $($proc.StartInfo.Arguments)"
         $proc.Start() | Out-Null
+
+        
         #Clear-Host
-        # Чтение в реальном времени, без блокировки
         while (-not $proc.HasExited -or -not $proc.StandardOutput.EndOfStream) {
             if (-not $proc.StandardOutput.EndOfStream) {
                 $line = $proc.StandardOutput.ReadLine()
     
                 if ($line) {
-                    # Проверка на ключевые слова
-                if ($line -match "Destination" -or $line -match "\[Merger\]" -or $line -match "Deleting" -or $line -match "has already been downloaded") {
-                        # Конвертация строки в CP1251
-                    $bytes = [System.Text.Encoding]::GetEncoding(866).GetBytes($line)
-                    $lineCP1251 = [System.Text.Encoding]::GetEncoding(1251).GetString($bytes)
-                    Write-Host $lineCP1251
-                } else {
-                    # Просто вывод остальных строк
-                    Write-Host $line
-                }
-                }
-            } else {
-                Start-Sleep -Milliseconds 50
-            }
-        }
-
-        $proc.WaitForExit()
-        Write-Host "Downloaded!"
-        $button1.Text = "Download"
-        #Clear-Host
-        
-        [System.Media.SystemSounds]::Exclamation.Play()
-
-        $button.Visible = 1
-        $button1.Visible = 0
-        $button_reset.Enabled = $true
-        $button_debug.Visible = $false
-        $comboRes.Visible = 0
-        $checkBox.Checked = $false
-        $label1.Visible = 0
-        $label2.Visible = 0
-        $label4.Visible = 0
-        $label5.Visible = 0
-        $textBox.Enabled = $true
-        $button_paste.Visible = 1
-        $button_reset.Visible = 0
-        $form.Text = "Video download"
-        $textBox.Text = ""
-    
-        $form.Size = New-Object System.Drawing.Size(500,95)
-
-    } else {
-        $selectedRes = $comboRes.SelectedItem
-        $selectedTBR = $comboTBR.SelectedItem
-        $id = $script:videos | Where-Object { ($_.FormatNote.ToString().Trim()) -ieq $selectedRes.ToString().Trim() } | Where-Object { ($_.TBR.ToString().Trim()) -ieq $selectedTBR.ToString().Trim() } |Select-Object -ExpandProperty ID | Sort-Object -Unique -Descending
-        $audio_id = $script:audios | Where-Object { $_.FormatNote -eq $script:selectedLang } | Select-Object -ExpandProperty ID
-        $button1.Text = "Downloading..."
-        $button_reset.Enabled = $false 
-        $button_debug.Visible = $false
-        Start-Sleep -Seconds 1
-        
-        $proc = New-Object System.Diagnostics.Process
-        $proc.StartInfo.FileName = if ($script:yt_dlp_error -eq $true) { $script:yt_dlp_path } else { "yt-dlp.exe" }
-
-        $arguments = @()
-
-        # Output path (Remote Invocation)
-        if ($IsRemoteInvocation -eq $true) {$arguments += "-P", "`"$script:selectedPath`""}
-
-        # ffmpeg path
-        if ($script:yt_dlp_error -eq $true) {$arguments += "--ffmpeg-location", "`"$script:ffmpeg_path`""}
-
-        # Proxy
-        if ($script:use_proxy) {$arguments += "--proxy", "$($script:proxy_address)"}
-
-        # JS Runtimes
-        if ($script:use_runtimes) {$arguments += "--js-runtimes", "$script:selected_runtime"}
-
-        # Remote Components
-        if ($script:use_components) {$arguments += "--remote-components", "$script:selected_components"}
-
-        # Cookies
-        if ($script:use_cookie) {
-            if ($script:use_cookie_browser) {
-                $arguments += "--cookies-from-browser", "$($script:cookie_browser)"
-            } elseif ($script:use_cookie_file) {
-                $arguments += "--cookies", "`"$($script:cookie_file)`""
-            }
-        }
-
-        # Format selection
-        if ($checkBox.Checked) {
-            # Audio only
-            if ($script:multiple_audio) {
-                $arguments += "-f", "$audio_id"
-            } else {
-                $arguments += "-f", "140"
-            }
-        } else {
-            # Video + Audio
-            if ($script:multiple_audio) {
-                $arguments += "-f", "$id+$audio_id"
-            } else {
-                $arguments += "-f", "$id+140"
-            }
-        }
-
-        $arguments += "-o", "%(title)s.%(ext)s"
-        $arguments += "$script:url"
-
-        $proc.StartInfo.Arguments = $arguments -join " "
-        $proc.StartInfo.UseShellExecute = $false
-        $proc.StartInfo.RedirectStandardOutput = $true
-        $proc.StartInfo.RedirectStandardError = $true
-        $proc.StartInfo.CreateNoWindow = $true
-
-        $proc.Start() | Out-Null
-
-        Clear-Host
-        # Чтение в реальном времени, без блокировки
-        while (-not $proc.HasExited -or -not $proc.StandardOutput.EndOfStream) {
-            if (-not $proc.StandardOutput.EndOfStream) {
-                $line = $proc.StandardOutput.ReadLine()
-    
-                if ($line) {
-                    # Проверка на ключевые слова
                 if ($line -match "Destination" -or $line -match "\[Merger\]" -or $line -match "\[FixupM4a\]" -or $line -match "Deleting" -or $line -match "has already been downloaded") {
-                        # Конвертация строки в CP1251
                     $bytes = [System.Text.Encoding]::GetEncoding(866).GetBytes($line)
                     $lineCP1251 = [System.Text.Encoding]::GetEncoding(1251).GetString($bytes)
                     Write-Host $lineCP1251
                 } else {
-                    # Просто вывод остальных строк
                     Write-Host $line
                 }
                 }
@@ -1289,7 +1383,8 @@ $button1.Add_Click({
         $button1.Text = "Download"
         Clear-Host
         
-        [System.Media.SystemSounds]::Exclamation.Play()
+        #[System.Media.SystemSounds]::Exclamation.Play()
+        Show-BalloonTip -Title "ytvd" -Message "Downloaded!`n $($script:video_title_ballon)"
 
         $button.Visible = 1
         $button1.Visible = 0
@@ -1314,44 +1409,258 @@ $button1.Add_Click({
         $textBox.Text = ""
     
         $form.Size = New-Object System.Drawing.Size(500,95)
+    }else{
+        if (Test-TikTokUrl -Url $script:url){
+            $selectedRes = $comboRes.SelectedItem
+            $id = $script:videos | Where-Object { $_.Resolution -ieq $selectedRes } |Select-Object -ExpandProperty ID | Sort-Object -Unique -Descending
+            $button1.Text = "Downloading..."
+            $button_reset.Enabled = $false 
+            $button_debug.Visible = $false
+            Start-Sleep -Seconds 1
+
+            $proc = New-Object System.Diagnostics.Process
+        
+            $proc.StartInfo.FileName = if ($script:yt_dlp_error -eq $true){$script:yt_dlp_path} else {'yt-dlp.exe'}
+
+            $args = @()
+
+            if ($script:yt_dlp_error -eq $true) {
+                $args += '--ffmpeg-location'
+                $args += "`"$script:ffmpeg_path`""
+            }
+
+            if ($IsRemoteInvocation -eq $true) {
+                $args += '-P'
+                $args += "`"$script:selectedPath`""
+            }
+
+            if ($script:use_proxy) {$arguments += "--proxy", "$($script:proxy_address)"}
+
+            if ($script:use_runtimes) {$arguments += "--js-runtimes", "$script:selected_runtime"}
+
+            if ($script:use_components) {$arguments += "--remote-components", "$script:selected_components"}
+
+            if ($script:use_cookie) {
+                if ($script:use_cookie_browser) {
+                    $arguments += "--cookies-from-browser", "$($script:cookie_browser)"
+                } elseif ($script:use_cookie_file) {
+                    $arguments += "--cookies", "`"$($script:cookie_file)`""
+                }
+            }
+
+            $args += '-f'
+            $args += $id
+            $args += $script:url
+            $proc.StartInfo.Arguments = $args -join ' '
+
+            $proc.StartInfo.UseShellExecute = $false
+            $proc.StartInfo.RedirectStandardOutput = $true
+            $proc.StartInfo.RedirectStandardError = $true
+            $proc.StartInfo.CreateNoWindow = $true
+            $proc.Start() | Out-Null
+
+            while (-not $proc.HasExited -or -not $proc.StandardOutput.EndOfStream) {
+                if (-not $proc.StandardOutput.EndOfStream) {
+                    $line = $proc.StandardOutput.ReadLine()
+    
+                    if ($line) {
+                    if ($line -match "Destination" -or $line -match "\[Merger\]" -or $line -match "Deleting" -or $line -match "has already been downloaded") {
+                        $bytes = [System.Text.Encoding]::GetEncoding(866).GetBytes($line)
+                        $lineCP1251 = [System.Text.Encoding]::GetEncoding(1251).GetString($bytes)
+                        Write-Host $lineCP1251
+                    } else {
+                        Write-Host $line
+                    }
+                    }
+                } else {
+                    Start-Sleep -Milliseconds 50
+                }
+            }
+
+            $proc.WaitForExit()
+            Write-Host "Downloaded!"
+            $button1.Text = "Download"
+            Clear-Host
+        
+            #[System.Media.SystemSounds]::Exclamation.Play()
+            Show-BalloonTip -Title "ytvd" -Message "Downloaded!`n $($script:video_title_ballon)"
+
+            $button.Visible = 1
+            $button1.Visible = 0
+            $button_reset.Enabled = $true
+            $button_proxy.Visible = $true
+            $button_runtimes.Visible = $true
+            $button_debug.Visible = $false
+            $checkBox.Visible = $false
+            $comboRes.Visible = 0
+            $comboTBR.Visible = 0
+            $checkBox.Checked = $false
+            $label1.Visible = 0
+            $label2.Visible = 0
+            $label4.Visible = 0
+            $label5.Visible = 0
+            $textBox.Enabled = $true
+            $button_paste.Visible = 1
+            $button_reset.Visible = 0
+            $button_update.Visible = $true
+            $button_cookie.Visible = $true
+            $form.Text = "Video download"
+            $textBox.Text = ""
+    
+            $form.Size = New-Object System.Drawing.Size(500,95)
+
+        } else {
+            $selectedRes = $comboRes.SelectedItem
+            $selectedTBR = $comboTBR.SelectedItem
+            $id = $script:videos | Where-Object { ($_.FormatNote.ToString().Trim()) -ieq $selectedRes.ToString().Trim() } | Where-Object { ($_.TBR.ToString().Trim()) -ieq $selectedTBR.ToString().Trim() } |Select-Object -ExpandProperty ID | Sort-Object -Unique -Descending
+            $audio_id = $script:audios | Where-Object { $_.FormatNote -eq $script:selectedLang } | Select-Object -ExpandProperty ID
+            $button1.Text = "Downloading..."
+            $button_reset.Enabled = $false 
+            $button_debug.Visible = $false
+            Start-Sleep -Seconds 1
+        
+            $proc = New-Object System.Diagnostics.Process
+            $proc.StartInfo.FileName = if ($script:yt_dlp_error -eq $true) { $script:yt_dlp_path } else { "yt-dlp.exe" }
+
+            $arguments = @()
+
+            # Output path (Remote Invocation)
+            if ($IsRemoteInvocation -eq $true) {$arguments += "-P", "`"$script:selectedPath`""}
+
+            # ffmpeg path
+            if ($script:yt_dlp_error -eq $true) {$arguments += "--ffmpeg-location", "`"$script:ffmpeg_path`""}
+
+            # Proxy
+            if ($script:use_proxy) {$arguments += "--proxy", "$($script:proxy_address)"}
+
+            # JS Runtimes
+            if ($script:use_runtimes) {$arguments += "--js-runtimes", "$script:selected_runtime"}
+
+            # Remote Components
+            if ($script:use_components) {$arguments += "--remote-components", "$script:selected_components"}
+
+            # Cookies
+            if ($script:use_cookie) {
+                if ($script:use_cookie_browser) {
+                    $arguments += "--cookies-from-browser", "$($script:cookie_browser)"
+                } elseif ($script:use_cookie_file) {
+                    $arguments += "--cookies", "`"$($script:cookie_file)`""
+                }
+            }
+
+            # Format selection
+            if ($checkBox.Checked) {
+                # Audio only
+                if ($script:multiple_audio) {
+                    $arguments += "-f", "$audio_id"
+                } else {
+                    $arguments += "-f", "140"
+                }
+            } else {
+                # Video + Audio
+                if ($script:multiple_audio) {
+                    $arguments += "-f", "$id+$audio_id"
+                } else {
+                    $arguments += "-f", "$id+140"
+                }
+            }
+
+            $arguments += "-o", "%(title)s.%(ext)s"
+            $arguments += "$script:url"
+
+            $proc.StartInfo.Arguments = $arguments -join " "
+            $proc.StartInfo.UseShellExecute = $false
+            $proc.StartInfo.RedirectStandardOutput = $true
+            $proc.StartInfo.RedirectStandardError = $true
+            $proc.StartInfo.CreateNoWindow = $true
+
+            $proc.Start() | Out-Null
+
+            Clear-Host
+            while (-not $proc.HasExited -or -not $proc.StandardOutput.EndOfStream) {
+                if (-not $proc.StandardOutput.EndOfStream) {
+                    $line = $proc.StandardOutput.ReadLine()
+    
+                    if ($line) {
+                    if ($line -match "Destination" -or $line -match "\[Merger\]" -or $line -match "\[FixupM4a\]" -or $line -match "Deleting" -or $line -match "has already been downloaded") {
+                        $bytes = [System.Text.Encoding]::GetEncoding(866).GetBytes($line)
+                        $lineCP1251 = [System.Text.Encoding]::GetEncoding(1251).GetString($bytes)
+                        Write-Host $lineCP1251
+                    } else {
+                        Write-Host $line
+                    }
+                    }
+                } else {
+                    Start-Sleep -Milliseconds 50
+                }
+            }
+
+            $proc.WaitForExit()
+            Write-Host "Downloaded!"
+            $button1.Text = "Download"
+            Clear-Host
+        
+            #[System.Media.SystemSounds]::Exclamation.Play()
+            Show-BalloonTip -Title "ytvd" -Message "Downloaded!`n $($script:video_title_ballon)"
+
+            $button.Visible = 1
+            $button1.Visible = 0
+            $button_reset.Enabled = $true
+            $button_proxy.Visible = $true
+            $button_runtimes.Visible = $true
+            $button_debug.Visible = $false
+            $checkBox.Visible = $false
+            $comboRes.Visible = 0
+            $comboTBR.Visible = 0
+            $checkBox.Checked = $false
+            $label1.Visible = 0
+            $label2.Visible = 0
+            $label4.Visible = 0
+            $label5.Visible = 0
+            $textBox.Enabled = $true
+            $button_paste.Visible = 1
+            $button_reset.Visible = 0
+            $button_update.Visible = $true
+            $button_cookie.Visible = $true
+            $form.Text = "Video download"
+            $textBox.Text = ""
+    
+            $form.Size = New-Object System.Drawing.Size(500,95)
+        }
     }
     $button1.Enabled = $true
+    $script:jsonContent = $null
+    $script:is_playlist = $null
 })
 
 #Событие нажатия на кнопку Debug
 $button_debug.Add_Click({
     if ($script:debug -eq $false) {
         $script:debug = $true
-        <##
-        Clear-Host
-        
-
-        if ((Test-TikTokUrl -Url $script:url) -like $false) {
-            Write-Host "`nAudios:" -NoNewline
-            $script:audios | Format-Table | Out-Host
-        } else {Write-Host ""}
-
-        Write-Host "Videos:" -NoNewline
-        $script:videos | Format-Table | Out-Host
-        ##>
 
         Clear-Host
         $selectedRes = $comboRes.SelectedItem
         $selectedTBR = $comboTBR.SelectedItem
         $script:selectedLang = $comboLang.SelectedItem
-        $size_video = $script:videos | Where-Object { ($_.FormatNote.ToString().Trim()) -ieq $selectedRes.ToString().Trim() } | Where-Object { ($_.TBR.ToString().Trim()) -ieq $selectedTBR.ToString().Trim() } |Select-Object -ExpandProperty Raw_size | Sort-Object -Unique -Descending
+        if(-not(Test-TikTokUrl -Url $script:url)){$size_video = $script:videos | Where-Object { ($_.FormatNote.ToString().Trim()) -ieq $selectedRes.ToString().Trim() } | Where-Object { ($_.TBR.ToString().Trim()) -ieq $selectedTBR.ToString().Trim() } |Select-Object -ExpandProperty Raw_size | Sort-Object -Unique -Descending}
         $size_audio = $script:audios | Where-Object { ($_.ID.ToString().Trim()) -ieq "140" } |Select-Object -ExpandProperty Raw_size
         $total_size = $size_video + $size_audio
         $size = "~ " + $(Format-FileSize $total_size)
         $size_display = "~ " + $(Format-FileSize $total_size)
-        $resolution = $script:videos | Where-Object { ($_.FormatNote.ToString().Trim()) -ieq $selectedRes.ToString().Trim() } | Where-Object { ($_.TBR.ToString().Trim()) -ieq $selectedTBR.ToString().Trim() } |Select-Object -ExpandProperty Resolution | Sort-Object -Unique -Descending
+        if(-not(Test-TikTokUrl -Url $script:url)){$resolution = $script:videos | Where-Object { ($_.FormatNote.ToString().Trim()) -ieq $selectedRes.ToString().Trim() } | Where-Object { ($_.TBR.ToString().Trim()) -ieq $selectedTBR.ToString().Trim() } |Select-Object -ExpandProperty Resolution | Sort-Object -Unique -Descending}
 
-        Write-Host "`nAudios:" -NoNewline
-        $script:audios | Format-Table | Out-Host
-        Write-Host "Videos:" -NoNewline
-        $script:videos | Format-Table | Out-Host
-        Write-Host "Quality: $selectedRes `nTBR: $selectedTBR `nSize: $size_display`nResolution: $resolution`n" -NoNewline
-        if ($script:multiple_audio -like $true){ Write-Host "Language: $script:selectedLang" }
+        if(Test-TikTokUrl -Url $script:url) {
+            Write-Host "Videos:" -NoNewline
+            $script:videos | Format-Table | Out-Host
+            Write-Host "Quality: $selectedRes `nTBR: $selectedTBR `nSize: $size_display`nResolution: $resolution`n" -NoNewline
+        }else{
+            Write-Host "`nAudios:" -NoNewline
+            $script:audios | Format-Table | Out-Host
+            Write-Host "Videos:" -NoNewline
+            $script:videos | Format-Table | Out-Host
+            Write-Host "Quality: $selectedRes `nTBR: $selectedTBR `nSize: $size_display`nResolution: $resolution`n" -NoNewline
+            if ($script:multiple_audio -like $true){ Write-Host "Language: $script:selectedLang" }
+        }
     } elseif ($script:debug -eq $true){
         $script:debug = $false
         Clear-Host
@@ -1364,11 +1673,17 @@ $checkBox.Add_CheckedChanged({
         $comboRes.Enabled = $false
         $comboTBR.Enabled = $false
         $script:old_size = $label5.Text
-        $audio_id_size = $script:audios | Where-Object { $_.FormatNote -eq $script:selectedLang -and $_.ID -like '140-*' -and $_.ID -notlike '140-drc*' } | Select-Object -ExpandProperty ID
-        if($script:multiple_audio){
-            $label5.Text = "~ " + $(Format-FileSize $($script:audios | Where-Object { ($_.ID.ToString().Trim()) -ieq "$($audio_id_size)" } |Select-Object -ExpandProperty Raw_size))
-        }else{
-            $label5.Text = "~ " + $(Format-FileSize $($script:audios | Where-Object { ($_.ID.ToString().Trim()) -ieq "140" } |Select-Object -ExpandProperty Raw_size))
+
+        if ($script:is_playlist) {
+            $totalBytes = Get-PlaylistSize -PlaylistJson $script:jsonContent -SelectedResolution $comboRes.SelectedItem -AudioOnly $true
+            $label5.Text = "~ " + $(Format-FileSize $totalBytes)
+        } else {
+            $audio_id_size = $script:audios | Where-Object { $_.FormatNote -eq $script:selectedLang -and $_.ID -like '140-*' -and $_.ID -notlike '140-drc*' } | Select-Object -ExpandProperty ID
+            if ($script:multiple_audio) {
+                $label5.Text = "~ " + $(Format-FileSize $($script:audios | Where-Object { ($_.ID.ToString().Trim()) -ieq "$($audio_id_size)" } | Select-Object -ExpandProperty Raw_size))
+            } else {
+                $label5.Text = "~ " + $(Format-FileSize $($script:audios | Where-Object { ($_.ID.ToString().Trim()) -ieq "140" } | Select-Object -ExpandProperty Raw_size))
+            }
         }
     } else {
         $comboRes.Enabled = $true
@@ -1379,39 +1694,44 @@ $checkBox.Add_CheckedChanged({
 
 #Событие при выборе Resolution
 $comboRes.Add_SelectedIndexChanged({
-    if (Test-TikTokUrl -Url $script:url){
-        $selectedRes = $comboRes.SelectedItem
-        if ($selectedRes) {
-            # Фильтруем массив по выбранной Resolution
-            $tbrList = $script:videos | Where-Object {$_.Resolution -eq $selectedRes} | Select-Object -ExpandProperty TBR | Sort-Object -Unique -Descending
-            # Гарантируем массив
-            if (-not $tbrList) { $tbrList = @() }
-            # Очищаем ComboBox и добавляем новые элементы
-            $comboTBR.Items.Clear()
-            if ($tbrList.Count -gt 0) { 
-                $comboTBR.Items.AddRange($tbrList) 
-                $comboTBR.SelectedIndex = 0
+    if($script:is_playlist){
+        $totalBytes = Get-PlaylistSize -PlaylistJson $script:jsonContent -SelectedResolution $comboRes.SelectedItem -AudioOnly $checkBox.Checked
+        $label5.Text = "$(Format-FileSize $totalBytes)"
+    }else{
+        if (Test-TikTokUrl -Url $script:url){
+            $selectedRes = $comboRes.SelectedItem
+            if ($selectedRes) {
+                # Фильтруем массив по выбранной Resolution
+                $tbrList = $script:videos | Where-Object {$_.Resolution -eq $selectedRes} | Select-Object -ExpandProperty TBR | Sort-Object -Unique -Descending
+                # Гарантируем массив
+                if (-not $tbrList) { $tbrList = @() }
+                # Очищаем ComboBox и добавляем новые элементы
+                $comboTBR.Items.Clear()
+                if ($tbrList.Count -gt 0) { 
+                    $comboTBR.Items.AddRange($tbrList) 
+                    $comboTBR.SelectedIndex = 0
+                }
             }
-        }
 
 
 
-    } else {
-        $selectedRes = $comboRes.SelectedItem
-        if ($selectedRes) {
-            # Фильтруем массив по выбранной Resolution
-            $tbrList = $script:videos | Where-Object { 
-                ($_.FormatNote.ToString().Trim()) -ieq $selectedRes.ToString().Trim() 
-            } | Select-Object -ExpandProperty TBR | Sort-Object -Unique -Descending
+        } else {
+            $selectedRes = $comboRes.SelectedItem
+            if ($selectedRes) {
+                # Фильтруем массив по выбранной Resolution
+                $tbrList = $script:videos | Where-Object { 
+                    ($_.FormatNote.ToString().Trim()) -ieq $selectedRes.ToString().Trim() 
+                } | Select-Object -ExpandProperty TBR | Sort-Object -Unique -Descending
 
-            # Гарантируем массив
-            if (-not $tbrList) { $tbrList = @() }
+                # Гарантируем массив
+                if (-not $tbrList) { $tbrList = @() }
     
-            # Очищаем ComboBox и добавляем новые элементы
-            $comboTBR.Items.Clear()
-            if ($tbrList.Count -gt 0) { 
-                $comboTBR.Items.AddRange($tbrList) 
-                $comboTBR.SelectedIndex = 0
+                # Очищаем ComboBox и добавляем новые элементы
+                $comboTBR.Items.Clear()
+                if ($tbrList.Count -gt 0) { 
+                    $comboTBR.Items.AddRange($tbrList) 
+                    $comboTBR.SelectedIndex = 0
+                }
             }
         }
     }
@@ -1427,7 +1747,7 @@ $comboTBR.Add_SelectedIndexChanged({
         $size_video = $script:videos | Where-Object {$_.Resolution -eq $selectedRes } | Where-Object { ($_.TBR.ToString().Trim()) -ieq $selectedTBR.ToString().Trim() } |Select-Object -ExpandProperty Raw_size | Sort-Object -Unique -Descending
         $size = $(Format-FileSize $size_video)
         $size_display = $(Format-FileSize $size_video)
-        ############################################################################################################################
+
         $resolution = $script:videos | Where-Object {$_.Resolution -eq $selectedRes } | Where-Object { ($_.TBR.ToString().Trim()) -ieq $selectedTBR.ToString().Trim() } |Select-Object -ExpandProperty Resolution | Sort-Object -Unique -Descending
 
         if ($script:debug -eq $true){
@@ -1442,7 +1762,7 @@ $comboTBR.Add_SelectedIndexChanged({
         $selectedRes = $comboRes.SelectedItem
         $selectedTBR = $comboTBR.SelectedItem
         $script:selectedLang = $comboLang.SelectedItem
-        ############################################################################################################################
+        
     
         $size_video = $script:videos | Where-Object { ($_.FormatNote.ToString().Trim()) -ieq $selectedRes.ToString().Trim() } | Where-Object { ($_.TBR.ToString().Trim()) -ieq $selectedTBR.ToString().Trim() } |Select-Object -ExpandProperty Raw_size | Sort-Object -Unique -Descending
         $size_audio = $script:audios | Where-Object { ($_.ID.ToString().Trim()) -ieq "140" } |Select-Object -ExpandProperty Raw_size
@@ -1450,7 +1770,7 @@ $comboTBR.Add_SelectedIndexChanged({
         $size = "~ " + $(Format-FileSize $total_size)
         $size_display = "~ " + $(Format-FileSize $total_size)
 
-        ############################################################################################################################
+        
         $resolution = $script:videos | Where-Object { ($_.FormatNote.ToString().Trim()) -ieq $selectedRes.ToString().Trim() } | Where-Object { ($_.TBR.ToString().Trim()) -ieq $selectedTBR.ToString().Trim() } |Select-Object -ExpandProperty Resolution | Sort-Object -Unique -Descending
         if ($script:debug -eq $true){
             Clear-Host
@@ -1554,5 +1874,6 @@ if (-not $script:ffmpeg_is_in_path){
     }
 }
 #endregion
+
 
 [void]$form.ShowDialog()
