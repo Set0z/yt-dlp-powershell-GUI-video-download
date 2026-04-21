@@ -9,6 +9,7 @@ $script:yt_dlp_error = $false
 $IsRemoteInvocation = $false
 $script:use_proxy = $false
 $script:proxy_address = $null
+try { node --version *>$null; $script:node_installed = $true } catch { $script:node_installed = $false }
 if ($PSScriptRoot -eq "") {$IsRemoteInvocation = $true}
 Add-Type -AssemblyName System.IO.Compression.FileSystem
 Add-Type -AssemblyName System.Windows.Forms
@@ -795,9 +796,10 @@ $form_runtimes.Add_FormClosed({
 # Действие если выбран node и чекбокс включен
 $comboBox_runtime.Add_SelectedIndexChanged({
     if ($checkBox_runtime.Checked -and $comboBox_runtime.SelectedItem -eq "node") {
-        try{node --version *>$null}catch{
+
+        if (-not $script:node_installed) {
             $result = [System.Windows.Forms.MessageBox]::Show("Node.js is not installed. Do you want to install it?","Node.js",[System.Windows.Forms.MessageBoxButtons]::YesNo,[System.Windows.Forms.MessageBoxIcon]::Question)
-            if($result -eq [System.Windows.Forms.DialogResult]::Yes){
+            if ($result -eq [System.Windows.Forms.DialogResult]::Yes) {
                 $raw_url = "https://nodejs.org/dist/latest/"
                 $page = Invoke-WebRequest -Uri $raw_url
                 $zip = ([regex]::Match($page.Content, 'node-v[\d.]+-win-x64\.zip')).Value
@@ -811,17 +813,20 @@ $comboBox_runtime.Add_SelectedIndexChanged({
                 $extracted = (Get-ChildItem $nodeDir -Directory)[0].FullName
                 [Environment]::SetEnvironmentVariable("PATH", $env:PATH + ";$extracted", "User")
                 $env:PATH += ";$extracted"
+                $script:node_installed = $true  # теперь сохранится глобально
             }
         }
+
     }
 })
 
 # Действие если выбран node и чекбокс включен
 $checkBox_runtime.Add_CheckedChanged({
     if ($checkBox_runtime.Checked -and $comboBox_runtime.SelectedItem -eq "node") {
-        try{node --version *>$null}catch{
+
+        if (-not $script:node_installed) {
             $result = [System.Windows.Forms.MessageBox]::Show("Node.js is not installed. Do you want to install it?","Node.js",[System.Windows.Forms.MessageBoxButtons]::YesNo,[System.Windows.Forms.MessageBoxIcon]::Question)
-            if($result -eq [System.Windows.Forms.DialogResult]::Yes){
+            if ($result -eq [System.Windows.Forms.DialogResult]::Yes) {
                 $raw_url = "https://nodejs.org/dist/latest/"
                 $page = Invoke-WebRequest -Uri $raw_url
                 $zip = ([regex]::Match($page.Content, 'node-v[\d.]+-win-x64\.zip')).Value
@@ -835,8 +840,10 @@ $checkBox_runtime.Add_CheckedChanged({
                 $extracted = (Get-ChildItem $nodeDir -Directory)[0].FullName
                 [Environment]::SetEnvironmentVariable("PATH", $env:PATH + ";$extracted", "User")
                 $env:PATH += ";$extracted"
+                $script:node_installed = $true  # теперь сохранится глобально
             }
         }
+
     }
 })
 
@@ -910,26 +917,49 @@ $button_update.Add_Click({
 
 #Событие нажатия на кнопку Help
 $button_Help.Add_Click({
-    [System.Windows.Forms.MessageBox]::Show(
-        "If you encounter an error searching Age-Restricted videos from YouTube, follow these steps:
+    if($PSCulture -eq "ru-RU"){
+        [System.Windows.Forms.MessageBox]::Show(
+        "Если при поиске или скачивании видео с возрастными ограничениями на YouTube возникает ошибка, выполните следующие шаги:
 
-1. COOKIES SETUP:
-   - Open Settings and enable the 'Cookies' option
-   - Select the browser in which you are logged in to YouTube
-   - IMPORTANT: Some browsers require to be closed before cookies can be read
-   - Make sure you are logged in to YouTube in the selected browser
+    1. НАСТРОЙКА COOKIES:
+       - Откройте раздел Cookie и включите опцию 'Use Cookie'
+       - Выберите браузер, в котором вы авторизованы на YouTube
+       - ВАЖНО: Некоторые браузеры требуют быть закрытыми перед считыванием cookies
+       - Убедитесь, что вы авторизованы на YouTube в выбранном браузере
 
-2. NODE.JS SETUP:
-   - Node.js is required together with cookies to download Age-Restricted videos
-   - Download and install Node.js from: https://nodejs.org
-   - After installation, restart this application
-   - Go to Settings - JS Runtimes and enable Node.js
+    2. НАСТРОЙКА NODE.JS:
+       - Node.js необходим вместе с cookies для скачивания видео с возрастными ограничениями
+       - Скачайте и установите Node.js с сайта: https://nodejs.org или разрешите ytvd установить его автоматически
+       - После ручной установки перезапустите приложение
+       - Перейдите в JS Runtimes и включите Node.js
 
-Both Cookies and Node.js must be enabled to download Age-Restricted videos.",
-        "Help",
+    Для поиска и скачивания видео с возрастными ограничениями необходимо включить и Cookies, и Node.js.",
+        "Справка",
         [System.Windows.Forms.MessageBoxButtons]::OK,
         [System.Windows.Forms.MessageBoxIcon]::Information
     )
+    }else{
+        [System.Windows.Forms.MessageBox]::Show(
+        "If you encounter an error searching or downloading Age-Restricted videos from YouTube, follow these steps:
+
+    1. COOKIES SETUP:
+       - Open Cookie and enable the 'Use Cookie' option
+       - Select the browser in which you are logged in to YouTube
+       - IMPORTANT: Some browsers require to be closed before cookies can be read
+       - Make sure you are logged in to YouTube in the selected browser
+
+    2. NODE.JS SETUP:
+       - Node.js is required together with cookies to download Age-Restricted videos
+       - Download and install Node.js from: https://nodejs.org or agree to let ytvd install them for you
+       - After installation, restart this application if you install it manualy
+       - Go to JS Runtimes and enable Node.js
+
+    Both Cookies and Node.js must be enabled to download or search Age-Restricted videos.",
+            "Help",
+            [System.Windows.Forms.MessageBoxButtons]::OK,
+            [System.Windows.Forms.MessageBoxIcon]::Information
+        )
+    }
 })
 
 #Событие нажатия на кнопку Paste
