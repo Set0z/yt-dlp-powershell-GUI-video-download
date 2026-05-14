@@ -1,7 +1,7 @@
-#Version: 1.4
+#Version: 1.4.1
 
 #region Глобальные переменные
-$version = 1.4
+$version = "1.4.1"
 $pwshPath = "$env:SystemRoot\System32\WindowsPowerShell\v1.0\powershell.exe"
 $script:debug = $false
 $script:multiple_audio = $false
@@ -455,6 +455,15 @@ $label7.Text = "Language:"
 $label7.Visible = 0 #
 $label7.Font = New-Object System.Drawing.Font("Arial",8,[System.Drawing.FontStyle]::Regular)
 $form.Controls.Add($label7)
+
+# Создаем Version_label
+$label_version = New-Object System.Windows.Forms.Label
+$label_version.Location = New-Object System.Drawing.Point(445,43)
+$label_version.Size = New-Object System.Drawing.Size(80,15)
+$label_version.Text = "v. $version"
+$label_version.Visible = 1
+$label_version.Font = New-Object System.Drawing.Font("Arial",8,[System.Drawing.FontStyle]::Regular)
+$form.Controls.Add($label_version)
 #endregion
 
 
@@ -989,6 +998,7 @@ $button_reset.Add_Click({
     $label5.Visible = $false
     $button_update.Visible = $true
     $button_cookie.Visible = $true
+    $button_Help.Visible = $true
     $checkBox.Checked = $false
     $form.Text = "Video Download"
     $script:jsonContent = $null
@@ -1069,6 +1079,7 @@ $button.Add_Click({
     $button_runtimes.Visible = $false
     $button_update.Visible = $false
     $button_cookie.Visible = $false
+    $button_Help.Visible = $false
 
     $button_debug.Visible = $true
     $checkBox.Visible = $true
@@ -1435,6 +1446,7 @@ $button1.Add_Click({
         $button_reset.Visible = 0
         $button_update.Visible = $true
         $button_cookie.Visible = $true
+        $button_Help.Visible = $true
         $form.Text = "Video download"
         $textBox.Text = ""
     
@@ -1534,6 +1546,7 @@ $button1.Add_Click({
             $button_reset.Visible = 0
             $button_update.Visible = $true
             $button_cookie.Visible = $true
+            $button_Help.Visible = $true
             $form.Text = "Video download"
             $textBox.Text = ""
     
@@ -1652,6 +1665,7 @@ $button1.Add_Click({
             $button_reset.Visible = 0
             $button_update.Visible = $true
             $button_cookie.Visible = $true
+            $button_Help.Visible = $true
             $form.Text = "Video download"
             $textBox.Text = ""
     
