@@ -1,14 +1,12 @@
-#Version: 1.4.1
+#Version: 1.5.0
 
 #region Глобальные переменные
-$version = "1.4.1"
+$version = "1.5.0"
 $pwshPath = "$env:SystemRoot\System32\WindowsPowerShell\v1.0\powershell.exe"
 $script:debug = $false
 $script:multiple_audio = $false
 $script:yt_dlp_error = $false
 $IsRemoteInvocation = $false
-$script:use_proxy = $false
-$script:proxy_address = $null
 try { node --version *>$null; $script:node_installed = $true } catch { $script:node_installed = $false }
 if ($PSScriptRoot -eq "") {$IsRemoteInvocation = $true}
 Add-Type -AssemblyName System.IO.Compression.FileSystem
@@ -303,8 +301,16 @@ $button_update = New-Object System.Windows.Forms.Button
 $button_update.Location = New-Object System.Drawing.Point(175,0)
 $button_update.Size = New-Object System.Drawing.Size(90,20)
 $button_update.Text = "Update yt-dlp"
-$button_update.TabIndex = 3
+$button_update.TabIndex = 4
 $form.Controls.Add($button_update)
+
+# Создаем кнопку Save
+$button_save = New-Object System.Windows.Forms.Button
+$button_save.Location = New-Object System.Drawing.Point(265,0)
+$button_save.Size = New-Object System.Drawing.Size(95,20)
+$button_save.Text = "Save settings"
+$button_save.TabIndex = 5
+$form.Controls.Add($button_save)
 
 # Создаем кнопку Help
 $button_Help = New-Object System.Windows.Forms.Button
@@ -461,7 +467,7 @@ $label_version = New-Object System.Windows.Forms.Label
 $label_version.Location = New-Object System.Drawing.Point(445,43)
 $label_version.Size = New-Object System.Drawing.Size(80,15)
 $label_version.Text = "v. $version"
-$label_version.Visible = 1
+$label_version.Visible = $true
 $label_version.Font = New-Object System.Drawing.Font("Arial",8,[System.Drawing.FontStyle]::Regular)
 $form.Controls.Add($label_version)
 #endregion
@@ -999,6 +1005,8 @@ $button_reset.Add_Click({
     $button_update.Visible = $true
     $button_cookie.Visible = $true
     $button_Help.Visible = $true
+    $button_save.Visible = $true
+    $label_version.Visible = $true
     $checkBox.Checked = $false
     $form.Text = "Video Download"
     $script:jsonContent = $null
@@ -1080,7 +1088,8 @@ $button.Add_Click({
     $button_update.Visible = $false
     $button_cookie.Visible = $false
     $button_Help.Visible = $false
-
+    $button_save.Visible = $false
+    $label_version.Visible = $false
     $button_debug.Visible = $true
     $checkBox.Visible = $true
 
@@ -1447,6 +1456,8 @@ $button1.Add_Click({
         $button_update.Visible = $true
         $button_cookie.Visible = $true
         $button_Help.Visible = $true
+        $button_save.Visible = $true
+        $label_version.Visible = $true
         $form.Text = "Video download"
         $textBox.Text = ""
     
@@ -1547,6 +1558,8 @@ $button1.Add_Click({
             $button_update.Visible = $true
             $button_cookie.Visible = $true
             $button_Help.Visible = $true
+            $button_save.Visible = $true
+            $label_version.Visible = $true
             $form.Text = "Video download"
             $textBox.Text = ""
     
@@ -1666,6 +1679,8 @@ $button1.Add_Click({
             $button_update.Visible = $true
             $button_cookie.Visible = $true
             $button_Help.Visible = $true
+            $button_save.Visible = $true
+            $label_version.Visible = $true
             $form.Text = "Video download"
             $textBox.Text = ""
     
@@ -1708,6 +1723,44 @@ $button_debug.Add_Click({
     } elseif ($script:debug -eq $true){
         $script:debug = $false
         Clear-Host
+    }
+})
+
+#Событие нажатия на кнопку Save settings
+$button_save.Add_Click({
+    $data = [ordered]@{
+        use_proxy                    = $script:use_proxy
+        proxy_address                = $script:proxy_address
+        textBox_proxy_ip             = $textBox_proxy_ip.Text
+        textBox_proxy_port           = $textBox_proxy_port.Text
+
+        use_runtimes                 = $script:use_runtimes
+        selected_runtime             = $script:selected_runtime
+        use_components               = $script:use_components
+        selected_components          = $script:selected_components
+
+        #comboBox_runtime             = $comboBox_runtime.SelectedItem
+        checkBox_runtime             = $checkBox_runtime.Checked
+        #comboBox_components          = $comboBox_components.SelectedItem
+        checkBox_components          = $checkBox_components.Checked
+        use_cookie                   = $script:use_cookie
+        use_cookie_browser           = $script:use_cookie_browser
+        use_cookie_file              = $script:use_cookie_file
+        cookie_browser               = $script:cookie_browser
+        cookie_file                  = $script:cookie_file
+        radio_cookies_browser        = $radio_cookies_browser.Checked
+        radio_cookies_file           = $radio_cookies_file.Checked
+        checkBox_cookie              = $checkBox_cookie.Checked
+        #comboBox_browser             = $comboBox_browser.SelectedItem
+        
+    }
+
+    if(Test-Path "$env:TEMP/ytvd.json"){
+        Clear-Content "$env:TEMP/ytvd.json"
+        $data | ConvertTo-Json | Set-Content "$env:TEMP/ytvd.json"
+    } else {
+        New-Item "$env:TEMP/ytvd.json" -ItemType File -Force
+        $data | ConvertTo-Json | Set-Content "$env:TEMP/ytvd.json"
     }
 })
 
@@ -1840,7 +1893,9 @@ $comboLang.Add_SelectedIndexChanged({
 })
 #endregion
 
+
 #endregion
+
 
 #region Проверка наличия yt-dlp и ffmpeg
 try {& "yt-dlp.exe" "--version" *>$null}catch{
@@ -1919,5 +1974,35 @@ if (-not $script:ffmpeg_is_in_path){
 }
 #endregion
 
+#region Проверка сохранённых настроек
+if (Test-Path "$env:TEMP/ytvd.json"){
+    $config = Get-Content "$env:TEMP/ytvd.json" | ConvertFrom-Json
+    $script:use_proxy                 = $config.use_proxy
+    $checkBox_proxy.Checked           = $config.use_proxy
+    $script:proxy_address             = $config.proxy_address
+    $textBox_proxy_ip.Text            = $config.textBox_proxy_ip
+    $textBox_proxy_port.Text          = $config.textBox_proxy_port
+
+    $script:use_runtimes              = $config.use_runtimes
+    $script:selected_runtime          = $config.selected_runtime
+    $script:use_components            = $config.use_components
+    $script:selected_components       = $config.selected_components
+
+    $comboBox_runtime.SelectedItem    = $config.selected_runtime
+    $checkBox_runtime.Checked         = $config.checkBox_runtime
+    $comboBox_components.SelectedItem = $config.selected_components
+    $checkBox_components.Checked      = $config.checkBox_components
+    $script:use_cookie                = $config.use_cookie
+    $script:use_cookie_browser        = $config.use_cookie_browser
+    $script:use_cookie_file           = $config.use_cookie_file
+    $script:cookie_browser            = $config.cookie_browser
+    $script:cookie_file               = $config.cookie_file
+    $radio_cookies_browser.Checked    = $config.radio_cookies_browser
+    $radio_cookies_file.Checked       = $config.radio_cookies_file
+    $checkBox_cookie.Checked          = $config.checkBox_cookie
+    $comboBox_browser.SelectedItem    = $config.cookie_browser
+    
+}
+#endregion
 
 [void]$form.ShowDialog()
