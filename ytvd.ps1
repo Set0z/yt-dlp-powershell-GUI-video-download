@@ -1,7 +1,7 @@
-#Version: 1.5.0
+#Version: 1.6.0
 
 #region Глобальные переменные
-$version = "1.5.0"
+$version = "1.6.0"
 $pwshPath = "$env:SystemRoot\System32\WindowsPowerShell\v1.0\powershell.exe"
 $script:debug = $false
 $script:multiple_audio = $false
@@ -12,6 +12,37 @@ if ($PSScriptRoot -eq "") {$IsRemoteInvocation = $true}
 Add-Type -AssemblyName System.IO.Compression.FileSystem
 Add-Type -AssemblyName System.Windows.Forms
 Add-Type -AssemblyName System.Drawing
+#endregion
+
+#region Создание форм Links
+$form_links = New-Object System.Windows.Forms.Form
+$form_links.Text = "Links"
+$form_links.Size = New-Object System.Drawing.Size(300,140)
+$form_links.StartPosition = "CenterScreen"
+$form_links.FormBorderStyle = 'FixedSingle'
+$form_links.MaximizeBox = $false
+$form_links.MinimizeBox = $false
+$form_links.BackColor = [System.Drawing.Color]::FromArgb(1,46,110)
+$form_links.ForeColor = [System.Drawing.Color]::White
+$form_links.Icon = [System.Drawing.Icon]::ExtractAssociatedIcon($pwshPath)
+
+$button_link_github = New-Object System.Windows.Forms.Button
+$button_link_github.Location = New-Object System.Drawing.Point(10,15)
+$button_link_github.Size = New-Object System.Drawing.Size(260,25)
+$button_link_github.Text = "GitHub"
+$button_link_github.UseVisualStyleBackColor = $false
+$button_link_github.BackColor = [System.Drawing.Color]::White
+$button_link_github.ForeColor = [System.Drawing.Color]::Black
+$form_links.Controls.Add($button_link_github)
+
+$button_link_donate = New-Object System.Windows.Forms.Button
+$button_link_donate.Location = New-Object System.Drawing.Point(10,55)
+$button_link_donate.Size = New-Object System.Drawing.Size(260,25)
+$button_link_donate.Text = "Support"
+$button_link_donate.UseVisualStyleBackColor = $false
+$button_link_donate.BackColor = [System.Drawing.Color]::White
+$button_link_donate.ForeColor = [System.Drawing.Color]::Black
+$form_links.Controls.Add($button_link_donate)
 #endregion
 
 #region Создание форм Cookie
@@ -320,6 +351,22 @@ $button_Help.Text = "Help"
 $button_Help.Font = New-Object System.Drawing.Font("Arial", 7)
 $form.Controls.Add($button_Help)
 
+# Создаем кнопку About Trim
+$button_About_Trim = New-Object System.Windows.Forms.Button
+$button_About_Trim.Location = New-Object System.Drawing.Point(40,40)
+$button_About_Trim.Size = New-Object System.Drawing.Size(60,17)
+$button_About_Trim.Text = "About Trim"
+$button_About_Trim.Font = New-Object System.Drawing.Font("Arial", 7)
+$form.Controls.Add($button_About_Trim)
+
+# Создаем кнопку Links
+$button_Links = New-Object System.Windows.Forms.Button
+$button_Links.Location = New-Object System.Drawing.Point(100,40)
+$button_Links.Size = New-Object System.Drawing.Size(40,17)
+$button_Links.Text = "Links"
+$button_Links.Font = New-Object System.Drawing.Font("Arial", 7)
+$form.Controls.Add($button_Links)
+
 # Создаем кнопку Runtimes
 $button_runtimes = New-Object System.Windows.Forms.Button
 $button_runtimes.Location = New-Object System.Drawing.Point(100,0)
@@ -470,6 +517,64 @@ $label_version.Text = "v. $version"
 $label_version.Visible = $true
 $label_version.Font = New-Object System.Drawing.Font("Arial",8,[System.Drawing.FontStyle]::Regular)
 $form.Controls.Add($label_version)
+
+#region Обрезка по времени
+
+# Создаем CheckBox
+$checkBox_Trim = New-Object System.Windows.Forms.CheckBox
+$checkBox_Trim.Location = New-Object System.Drawing.Point(157,117)
+$checkBox_Trim.Text = "Trim by time"
+$checkBox_Trim.AutoSize = $true
+$checkBox_Trim.Visible = $True
+$checkBox_Trim.CheckAlign = 'MiddleRight'
+$form.Controls.Add($checkBox_Trim)
+
+$timePicker_Start = New-Object System.Windows.Forms.DateTimePicker
+$timePicker_Start.Location = New-Object System.Drawing.Point(250,115)
+$timePicker_Start.Size = New-Object System.Drawing.Size(70,50)
+$timePicker_Start.Format = [System.Windows.Forms.DateTimePickerFormat]::Custom
+$timePicker_Start.CustomFormat = "HH:mm:ss"
+$timePicker_Start.ShowUpDown = $true
+$timePicker_Start.Text = "00:00:00"
+$timePicker_Start.Enabled = $false
+$form.Controls.Add($timePicker_Start)
+
+$label_Start = New-Object System.Windows.Forms.Label
+$label_Start.Location = New-Object System.Drawing.Point(270,102)
+$label_Start.Size = New-Object System.Drawing.Size(50,25)
+$label_Start.Text = "Start"
+$label_Start.Visible = 1 #
+$label_Start.Font = New-Object System.Drawing.Font("Arial",8,[System.Drawing.FontStyle]::Regular)
+$form.Controls.Add($label_Start)
+
+$timePicker_End = New-Object System.Windows.Forms.DateTimePicker
+$timePicker_End.Location = New-Object System.Drawing.Point(341,115)
+$timePicker_End.Size = New-Object System.Drawing.Size(70,50)
+$timePicker_End.Format = [System.Windows.Forms.DateTimePickerFormat]::Custom
+$timePicker_End.CustomFormat = "HH:mm:ss"
+$timePicker_End.ShowUpDown = $true
+$timePicker_End.Text = "12:00:00"
+$timePicker_End.Enabled = $false
+$form.Controls.Add($timePicker_End)
+
+$label_End = New-Object System.Windows.Forms.Label
+$label_End.Location = New-Object System.Drawing.Point(361,102)
+$label_End.Size = New-Object System.Drawing.Size(50,25)
+$label_End.Text = "End"
+$label_End.Visible = 1 #
+$label_End.Font = New-Object System.Drawing.Font("Arial",8,[System.Drawing.FontStyle]::Regular)
+$form.Controls.Add($label_End)
+
+$label_Split = New-Object System.Windows.Forms.Label
+$label_Split.Location = New-Object System.Drawing.Point(323,117)
+$label_Split.Size = New-Object System.Drawing.Size(70,40)
+$label_Split.Text = "—"
+$label_Split.Visible = 1 #
+$label_Split.Font = New-Object System.Drawing.Font("Arial",8,[System.Drawing.FontStyle]::Regular)
+$form.Controls.Add($label_Split)
+
+#endregion
+
 #endregion
 
 
@@ -631,6 +736,28 @@ Start-Sleep -Seconds 10;
 #endregion
 
 #region События
+
+#region Links
+
+#Событие нажатия на кнопку Links
+$button_Links.Add_Click({
+    $form_links.ShowDialog()
+})
+
+$button_link_github.Add_Click({
+    Start-Process "https://github.com/Set0z/ytvd"
+})
+
+$button_link_donate.Add_Click({
+    [System.Windows.Forms.MessageBox]::Show(
+        "This feature is not available yet.",
+        "Donate",
+        [System.Windows.Forms.MessageBoxButtons]::OK,
+        [System.Windows.Forms.MessageBoxIcon]::Information
+    )
+})
+
+#endregion
 
 #region Cookie
 
@@ -929,7 +1056,6 @@ $button_update.Add_Click({
 
 #region Form
 
-
 #Событие нажатия на кнопку Help
 $button_Help.Add_Click({
     if($PSCulture -eq "ru-RU"){
@@ -977,6 +1103,47 @@ $button_Help.Add_Click({
     }
 })
 
+#Событие нажатия на кнопку About Trim
+$button_About_Trim.Add_Click({
+    if($PSCulture -eq "ru-RU"){
+        [System.Windows.Forms.MessageBox]::Show(
+        "Функция 'Trim by time' позволяет вырезать нужный фрагмент из видео или аудио.
+
+КАК ЭТО РАБОТАЕТ:
+   - Сначала будет скачано ПОЛНОЕ видео или аудио
+   - Затем из него автоматически вырежется указанный вами фрагмент
+   - Исходный файл будет заменён обрезанным
+
+ИСПОЛЬЗОВАНИЕ:
+   - Включите 'Trim by time' и укажите время начала (Start) и конца (End) нужного фрагмента
+   - Работает как с видео, так и с аудио
+
+ВАЖНО: Время обработки зависит от длины исходного файла и мощности вашего процессора.",
+        "Справка — Обрезка по времени",
+        [System.Windows.Forms.MessageBoxButtons]::OK,
+        [System.Windows.Forms.MessageBoxIcon]::Information
+        )
+    }else{
+        [System.Windows.Forms.MessageBox]::Show(
+        "The 'Trim by time' feature allows you to extract a specific fragment from a video or audio file.
+
+HOW IT WORKS:
+   - The FULL video or audio will be downloaded first
+   - Then the specified fragment will be automatically cut from it
+   - The original file will be replaced with the trimmed one
+
+USAGE:
+   - Enable 'Trim by time' and set the Start and End time of the desired fragment
+   - Works with both video and audio
+
+NOTE: Processing time depends on the length of the original file and your CPU performance.",
+        "Help — Trim by time",
+        [System.Windows.Forms.MessageBoxButtons]::OK,
+        [System.Windows.Forms.MessageBoxIcon]::Information
+        )
+    }
+})
+
 #Событие нажатия на кнопку Paste
 $button_paste.Add_Click({
     $textBox.Text = [System.Windows.Forms.Clipboard]::GetText()
@@ -1011,6 +1178,11 @@ $button_reset.Add_Click({
     $form.Text = "Video Download"
     $script:jsonContent = $null
     $script:is_playlist = $false
+
+    $base = [datetime]::Today
+    $timePicker_End.MinDate = $base
+    $timePicker_End.MaxDate = $base.AddDays(1)
+    $timePicker_End.Value = $base
 })
 
 #Событие нажатия на кнопку Search
@@ -1230,6 +1402,22 @@ $button.Add_Click({
             $form.Size = New-Object System.Drawing.Size(500,140)
 
         }else{
+
+            $duration = $jsonContent.duration
+            $ts = [TimeSpan]::FromSeconds($duration)
+
+            if ($ts.Hours -gt 0) {
+                $timePicker_End.Value = [datetime]::Today.AddSeconds($duration)
+                $timePicker_End.CustomFormat = "HH:mm:ss"
+                $timePicker_Start.CustomFormat = "HH:mm:ss"
+                $timePicker_End.MaxDate = [datetime]::Today.AddSeconds($duration)
+            } else {
+                $timePicker_End.Value = [datetime]::Today.AddSeconds($duration)
+                $timePicker_End.CustomFormat = "mm:ss"
+                $timePicker_Start.CustomFormat = "mm:ss"
+                $timePicker_End.MaxDate = [datetime]::Today.AddSeconds($duration)
+            }
+
             foreach ($format in $jsonContent.formats) {
 
                 if ($format.ext -eq "mp4" -and $format.vcodec -ne "none" -and $format.format_note -and $format.format_note -ne "(original)" -and $format.format_note -ne "(default)") {
@@ -1317,7 +1505,7 @@ $button.Add_Click({
                         break
                     }
                 }
-        } else { $form.Size = New-Object System.Drawing.Size(500,140) }
+        } else { $form.Size = New-Object System.Drawing.Size(500,185) }
 
 
         $button.Text = "Search"
@@ -1342,6 +1530,16 @@ $button.Add_Click({
         $button_paste.Visible = $false
         $button_reset.Visible = $true
         }}
+
+        if(-not $script:multiple_audio){
+            $form.Size = New-Object System.Drawing.Size(500,185)
+            $checkBox_Trim.Location = New-Object System.Drawing.Point(17,117)
+            $timePicker_Start.Location = New-Object System.Drawing.Point(110,115)
+            $label_Start.Location = New-Object System.Drawing.Point(130,102)
+            $timePicker_End.Location = New-Object System.Drawing.Point(201,115)
+            $label_End.Location = New-Object System.Drawing.Point(221,102)
+            $label_Split.Location = New-Object System.Drawing.Point(183,117)
+        }
 })
 
 #Событие нажатия на кнопку Download
@@ -1638,13 +1836,25 @@ $button1.Add_Click({
                     $line = $proc.StandardOutput.ReadLine()
     
                     if ($line) {
-                    if ($line -match "Destination" -or $line -match "\[Merger\]" -or $line -match "\[FixupM4a\]" -or $line -match "Deleting" -or $line -match "has already been downloaded") {
-                        $bytes = [System.Text.Encoding]::GetEncoding(866).GetBytes($line)
-                        $lineCP1251 = [System.Text.Encoding]::GetEncoding(1251).GetString($bytes)
-                        Write-Host $lineCP1251
-                    } else {
-                        Write-Host $line
-                    }
+                        if ($line -match "Destination" -or $line -match "\[Merger\]" -or $line -match "\[FixupM4a\]" -or $line -match "Deleting" -or $line -match "has already been downloaded") {
+                            $bytes = [System.Text.Encoding]::GetEncoding(866).GetBytes($line)
+                            $lineCP1251 = [System.Text.Encoding]::GetEncoding(1251).GetString($bytes)
+                            Write-Host $lineCP1251
+                            $script:file_already_ex = $true
+                        } else {
+                            Write-Host $line
+                        }
+                        if ($line -match '\[Merger\].*?"(.+?\.(mp4|mkv|webm))"') {
+                            $script:downloadedFile_raw = $matches[1]
+                            $bytes_file = [System.Text.Encoding]::GetEncoding(866).GetBytes($downloadedFile_raw)
+                            $script:downloadedFile = [System.Text.Encoding]::GetEncoding(1251).GetString($bytes_file)
+                        }
+
+                        if ($line -match '\[FixupM4a\].*?"(.+?\.(m4a|mp4))"') {
+                            $script:downloadedFile_raw = $matches[1]
+                            $bytes_file = [System.Text.Encoding]::GetEncoding(866).GetBytes($downloadedFile_raw)
+                            $script:downloadedFile = [System.Text.Encoding]::GetEncoding(1251).GetString($bytes_file)
+                        }
                     }
                 } else {
                     Start-Sleep -Milliseconds 50
@@ -1652,12 +1862,75 @@ $button1.Add_Click({
             }
 
             $proc.WaitForExit()
+
+            $searchName = [System.IO.Path]::GetFileNameWithoutExtension($script:downloadedFile) 
+            $searchExt  = [System.IO.Path]::GetExtension($script:downloadedFile)
+            $searchDir  = if ($IsRemoteInvocation) { $script:selectedPath } else { $PSScriptRoot }
+
+            $found = Get-ChildItem -Path $searchDir -Filter "*$searchExt" | Where-Object {
+                $cleanName = ($_.BaseName -replace '[^\x00-\xFF]', '')
+                $cleanSearch = ($searchName -replace '[^\x00-\xFF]', '')
+                $cleanName -eq $cleanSearch
+            } | Select-Object -First 1
+
+            if ($found) {
+                $script:downloadedFile = $found.Name
+            }
+            $script:file_already_ex = $false
+
+
+
+            if ($checkBox_Trim.Checked) {
+                $script:Start_Time = $timePicker_Start.Value.ToString("HH:mm:ss")
+                $script:End_Time = $timePicker_End.Value.ToString("HH:mm:ss")
+
+
+                $proc = New-Object System.Diagnostics.Process
+                $proc.StartInfo.FileName = if ($script:ffmpeg_error -eq $true) { $script:ffmpeg_path } else { "ffmpeg.exe" }
+
+                $arguments = @()
+
+                $searchDir  = if ($IsRemoteInvocation -and (-not $script:file_already_ex)) { $script:selectedPath } else { $PSScriptRoot }
+                $ext        = [System.IO.Path]::GetExtension($script:downloadedFile).TrimStart('.')
+                $OutputFile = Join-Path $searchDir "output.$ext"
+
+                if ($IsRemoteInvocation -and (-not $script:file_already_ex)) {
+                    $script:FullFilePath = $script:selectedPath + "\" + $script:downloadedFile
+                } else {
+                    $script:FullFilePath = $PSScriptRoot + "\" + $script:downloadedFile
+                }
+
+                $proc.StartInfo.Arguments = @(
+                    "-i", "`"$script:FullFilePath`"",
+                    "-ss", $script:Start_Time,
+                    "-to", $script:End_Time,
+                    "-c:v", "libx264",
+                    "-c:a", "aac",
+                    "`"$OutputFile`""
+                ) -join " "
+
+                #$proc.StartInfo.UseShellExecute = $false
+                #$proc.StartInfo.CreateNoWindow = $true
+
+                Write-Host "[Trim] Start of trimming. (This may take a while)"
+
+                $proc.Start() | Out-Null
+                $proc.WaitForExit()
+                $code = $proc.ExitCode
+                Remove-Item -Path "$script:FullFilePath"
+                Move-Item -Path "$OutputFile" "$script:FullFilePath"
+
+                Write-Host "Done!"
+            }
+
+
+
+
             Write-Host "Downloaded!"
             $button1.Text = "Download"
             Clear-Host
         
-            #[System.Media.SystemSounds]::Exclamation.Play()
-            Show-BalloonTip -Title "ytvd" -Message "Downloaded!`n $($script:video_title_ballon)"
+            if(-not $script:file_already_ex){Show-BalloonTip -Title "ytvd" -Message "Downloaded!`n $($script:video_title_ballon)"}
 
             $button.Visible = 1
             $button1.Visible = 0
@@ -1786,6 +2059,17 @@ $checkBox.Add_CheckedChanged({
         $comboRes.Enabled = $true
         $comboTBR.Enabled = $true
         $label5.Text = $script:old_size
+    }
+})
+
+#Событие нажатия на галочку Trim
+$checkBox_Trim.Add_CheckedChanged({
+    if($checkBox_Trim.Checked){
+        $timePicker_Start.Enabled = $true
+        $timePicker_End.Enabled = $true
+    } else {
+        $timePicker_Start.Enabled = $false
+        $timePicker_End.Enabled = $false
     }
 })
 
