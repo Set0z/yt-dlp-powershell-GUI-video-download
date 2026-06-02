@@ -1171,6 +1171,8 @@ $button_reset.Add_Click({
     $label5.Visible = $false
     $button_update.Visible = $true
     $button_cookie.Visible = $true
+    $button_About_Trim.Visible = $true
+    $button_Links.Visible = $true
     $button_Help.Visible = $true
     $button_save.Visible = $true
     $label_version.Visible = $true
@@ -1259,6 +1261,8 @@ $button.Add_Click({
     $button_runtimes.Visible = $false
     $button_update.Visible = $false
     $button_cookie.Visible = $false
+    $button_About_Trim.Visible = $false
+    $button_Links.Visible = $false
     $button_Help.Visible = $false
     $button_save.Visible = $false
     $label_version.Visible = $false
@@ -1653,6 +1657,8 @@ $button1.Add_Click({
         $button_reset.Visible = 0
         $button_update.Visible = $true
         $button_cookie.Visible = $true
+        $button_About_Trim.Visible = $true
+        $button_Links.Visible = $true
         $button_Help.Visible = $true
         $button_save.Visible = $true
         $label_version.Visible = $true
@@ -1755,6 +1761,8 @@ $button1.Add_Click({
             $button_reset.Visible = 0
             $button_update.Visible = $true
             $button_cookie.Visible = $true
+            $button_About_Trim.Visible = $true
+            $button_Links.Visible = $true
             $button_Help.Visible = $true
             $button_save.Visible = $true
             $label_version.Visible = $true
@@ -1951,6 +1959,8 @@ $button1.Add_Click({
             $button_reset.Visible = 0
             $button_update.Visible = $true
             $button_cookie.Visible = $true
+            $button_About_Trim.Visible = $true
+            $button_Links.Visible = $true
             $button_Help.Visible = $true
             $button_save.Visible = $true
             $label_version.Visible = $true
