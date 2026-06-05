@@ -1890,24 +1890,55 @@ $button1.Add_Click({
 
             if ($checkBox_Trim.Checked) {
                 $script:Start_Time = $timePicker_Start.Value.ToString("HH:mm:ss")
-                $script:End_Time = $timePicker_End.Value.ToString("HH:mm:ss")
+                $script:End_Time   = $timePicker_End.Value.ToString("HH:mm:ss")
 
+                $ext = [System.IO.Path]::GetExtension($script:downloadedFile).TrimStart('.')
+
+                $searchDir = if ($IsRemoteInvocation -and (-not $script:file_already_ex)) {
+                    $script:selectedPath
+                } else {
+                    $PSScriptRoot
+                }
+                $exactPath = Join-Path $searchDir $script:downloadedFile
+
+                if (Test-Path $exactPath) {
+                    $script:FullFilePath = $exactPath
+                    Write-Host "[Trim] Файл найден: $script:FullFilePath"
+
+                } elseif (-not $IsRemoteInvocation) {
+                    $approxBase = [System.IO.Path]::GetFileNameWithoutExtension($script:downloadedFile)
+                    $pattern    = '^' + ([regex]::Escape($approxBase) -replace '\\\?', '.') + '$'
+
+                    $match = Get-ChildItem -Path $searchDir -File |
+                             Where-Object { $_.Extension -ieq ".$ext" } |
+                             Where-Object { [System.IO.Path]::GetFileNameWithoutExtension($_.Name) -match $pattern } |
+                             Sort-Object LastWriteTime -Descending |
+                             Select-Object -First 1
+                    if (-not $match) {
+                        Write-Host "[Trim] Паттерн не дал результата, берём самый новый файл с расширением .$ext"
+                        $match = Get-ChildItem -Path $searchDir -File |
+                                 Where-Object { $_.Extension -ieq ".$ext" } |
+                                 Sort-Object LastWriteTime -Descending |
+                                 Select-Object -First 1
+                    }
+
+                    $script:FullFilePath = if ($match) { $match.FullName } else { $exactPath }
+                    Write-Host "[Trim] Файл найден: $script:FullFilePath"
+
+                } else {
+                    $match = Get-ChildItem -Path $searchDir -File |
+                             Where-Object { $_.Extension -ieq ".$ext" } |
+                             Sort-Object LastWriteTime -Descending |
+                             Select-Object -First 1
+
+                    $script:FullFilePath = if ($match) { $match.FullName } else { $exactPath }
+                    Write-Host "[Trim] Файл найден: $script:FullFilePath"
+                }
+
+                $OutputFile = Join-Path $searchDir "output.$ext"
 
                 $proc = New-Object System.Diagnostics.Process
                 $proc.StartInfo.FileName = if ($script:ffmpeg_error -eq $true) { $script:ffmpeg_path } else { "ffmpeg.exe" }
-
-                $arguments = @()
-
-                $searchDir  = if ($IsRemoteInvocation -and (-not $script:file_already_ex)) { $script:selectedPath } else { $PSScriptRoot }
-                $ext        = [System.IO.Path]::GetExtension($script:downloadedFile).TrimStart('.')
-                $OutputFile = Join-Path $searchDir "output.$ext"
-
-                if ($IsRemoteInvocation -and (-not $script:file_already_ex)) {
-                    $script:FullFilePath = $script:selectedPath + "\" + $script:downloadedFile
-                } else {
-                    $script:FullFilePath = $PSScriptRoot + "\" + $script:downloadedFile
-                }
-
                 $proc.StartInfo.Arguments = @(
                     "-i", "`"$script:FullFilePath`"",
                     "-ss", $script:Start_Time,
@@ -1917,25 +1948,21 @@ $button1.Add_Click({
                     "`"$OutputFile`""
                 ) -join " "
 
-                #$proc.StartInfo.UseShellExecute = $false
-                #$proc.StartInfo.CreateNoWindow = $true
-
-                Write-Host "[Trim] Start of trimming. (This may take a while)"
-
+                Write-Host "[Trim] Начало обрезки. (Может занять некоторое время)"
+                #Write-Host "[Trim] Команда: $($proc.StartInfo.FileName) $($proc.StartInfo.Arguments)"
                 $proc.Start() | Out-Null
                 $proc.WaitForExit()
                 $code = $proc.ExitCode
                 Remove-Item -Path "$script:FullFilePath"
-                Move-Item -Path "$OutputFile" "$script:FullFilePath"
-
-                Write-Host "Done!"
+                Move-Item -Path "$OutputFile" -Destination "$script:FullFilePath"
+                Write-Host "[ytvd] Trimed!"
             }
 
 
 
-
-            Write-Host "Downloaded!"
+            if ($checkBox_Trim.Checked){Write-Host "[ytvd] Downloaded & Trimed!"}else{Write-Host "[ytvd] Downloaded!"}
             $button1.Text = "Download"
+            pause
             Clear-Host
         
             if(-not $script:file_already_ex){Show-BalloonTip -Title "ytvd" -Message "Downloaded!`n $($script:video_title_ballon)"}
